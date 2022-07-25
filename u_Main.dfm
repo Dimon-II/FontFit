@@ -28,7 +28,7 @@ object MainForm: TMainForm
     Top = 0
     Width = 1162
     Height = 474
-    ActivePage = tsGlyph
+    ActivePage = tsKern
     Align = alClient
     TabOrder = 0
     TabPosition = tpBottom
@@ -451,7 +451,6 @@ object MainForm: TMainForm
         RowCount = 2
         Options = [goVertLine, goHorzLine, goColSizing, goEditing, goRowSelect]
         TabOrder = 1
-        ExplicitWidth = 671
       end
       object sgBase: TStringGrid
         Left = 74
@@ -492,9 +491,6 @@ object MainForm: TMainForm
         Gutter.Font.Style = []
         Highlighter = SynXMLSyn1
         WordWrap = True
-        ExplicitTop = 0
-        ExplicitWidth = 671
-        ExplicitHeight = 448
       end
       object ToolBar2: TToolBar
         Left = 0
@@ -510,7 +506,6 @@ object MainForm: TMainForm
         ShowCaptions = True
         ShowHint = True
         TabOrder = 1
-        ExplicitWidth = 671
         object ToolButton3: TToolButton
           Left = 0
           Top = 0
@@ -550,9 +545,6 @@ object MainForm: TMainForm
         TabOrder = 0
         OnDrawCell = sgDrawCell
         OnSelectCell = sgSelectCell
-        ExplicitLeft = -1
-        ExplicitTop = 58
-        ExplicitWidth = 671
       end
       object ToolBar1: TToolBar
         Left = 0
@@ -568,7 +560,6 @@ object MainForm: TMainForm
         ShowCaptions = True
         ShowHint = True
         TabOrder = 1
-        ExplicitWidth = 671
         object ToolButton25: TToolButton
           Left = 0
           Top = 0
@@ -634,7 +625,6 @@ object MainForm: TMainForm
         Align = alBottom
         TabOrder = 2
         Visible = False
-        ExplicitWidth = 671
       end
       object Panel3: TPanel
         Left = 0
@@ -644,7 +634,6 @@ object MainForm: TMainForm
         Align = alBottom
         Caption = 'Panel3'
         TabOrder = 3
-        ExplicitWidth = 671
         object KernPaint: TPaintBox
           Left = 313
           Top = 1

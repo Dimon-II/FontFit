@@ -1631,6 +1631,8 @@ var
   i,j,k:integer;
   n1,nod:TXML_Nod;
   s:string;
+  sl1:TStringList;
+  sl2:TStringList;
 begin
 
   if MessageDlg('Apply new kernig settings?', TMsgDlgType.mtConfirmation, [mbYes,mbNo],0)<>mrYes then exit;
@@ -1638,14 +1640,57 @@ begin
   ProgressBar1.Position:=0;
   ProgressBar1.Max := FNT.Node['svg'].Node['defs'].Node['font'].Nodes.Count + sg.RowCount-2;
   ProgressBar1.Visible := True;
+  sl1:=TStringList.Create;
+  sl1.CaseSensitive:=True;
+  sl2:=TStringList.Create;
+  sl2.CaseSensitive:=True;
+
 
   nod := FNT;
   while nod<>nil do
   begin
     ProgressBar1.Position:=ProgressBar1.Position+1;
     Application.ProcessMessages;
+    n1 := nod.next;
     if nod.LocalName='hkern' then
     begin
+
+      if nod.Attribute['g1']<>'' then
+      begin
+        sl1.CommaText := nod.Attribute['g1'];
+        sl2.CommaText := nod.Attribute['g2'];
+        for i := 2 to sg.RowCount-1 do
+          if sl1.IndexOf(sg.Cols[0][i])>-1 then
+          begin
+            for j := 2 to sg.ColCount-1 do
+              if sl2.IndexOf(sg.Rows[0][j])>-1 then
+              begin
+                sl2.Delete(sl2.IndexOf(sg.Rows[0][j]));
+                if sl2.count=0 then break;
+              end;
+            if sl2.count=0 then break;
+          end;
+        if sl2.count=0 then
+          nod.Free
+        else
+          nod.Attribute['g2'] := sl2.CommaText;
+      end
+      else
+
+      if nod.Attribute['u1']<>'' then
+      begin
+        sl1.Text := sg.Cols[1].Text;
+        sl2.Text := sg.Rows[1].Text;
+        if (sl1.IndexOf(THTMLEncoding.HTML.Decode(nod.Attribute['u1']))>-1) and
+           (sl2.IndexOf(THTMLEncoding.HTML.Decode(nod.Attribute['u2']))>-1)
+        then
+          nod.Free;
+      end;
+
+
+
+
+{
       for i := 2 to sg.RowCount-1 do
         if (THTMLEncoding.HTML.Decode(nod.Attribute['u1'])=sg.Cells[1,i]) or
            (pos(','+sg.Cells[0,i]+',',  ','+nod.Attribute['g1']+',')>0)
@@ -1669,15 +1714,12 @@ begin
               break;
             end;
         end;
-
-      n1 := nod;
-      nod := nod.next;
-      if (n1.Attribute['g2']='')and(n1.Attribute['u2']='') then
-        n1.Free;
-     end
-    else
-      nod := nod.next;
+}
+    end;
+    nod := n1;
   end;
+  sl1.free;
+  sl2.free;
 
   for i := 2 to sg.RowCount-1 do
   begin
