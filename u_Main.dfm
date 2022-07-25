@@ -32,7 +32,6 @@ object MainForm: TMainForm
     Align = alClient
     TabOrder = 0
     TabPosition = tpBottom
-    ExplicitWidth = 679
     object tsGlyph: TTabSheet
       Caption = 'Glyph'
       object sbrPaint: TScrollBox
@@ -47,7 +46,6 @@ object MainForm: TMainForm
         ParentColor = False
         TabOrder = 0
         TabStop = True
-        ExplicitWidth = 671
         object pnImg: TPanel
           Left = 0
           Top = 0
@@ -59,7 +57,6 @@ object MainForm: TMainForm
           Color = clWhite
           ParentBackground = False
           TabOrder = 0
-          ExplicitWidth = 667
           object Draw: TPaintBox
             AlignWithMargins = True
             Left = 8
@@ -89,7 +86,6 @@ object MainForm: TMainForm
         Align = alTop
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitWidth = 671
         object Panel2: TPanel
           Left = 0
           Top = 0
@@ -151,7 +147,6 @@ object MainForm: TMainForm
           ShowCaptions = True
           ShowHint = True
           TabOrder = 1
-          ExplicitWidth = 574
           object ToolButton12: TToolButton
             Left = 0
             Top = 0
@@ -777,8 +772,6 @@ object MainForm: TMainForm
       OnChange = treeFNTChange
       OnChanging = treeFNTChanging
       OnCompare = treeFNTCompare
-      ExplicitLeft = 1
-      ExplicitTop = 46
     end
   end
   object StatusBar1: TStatusBar
@@ -790,7 +783,6 @@ object MainForm: TMainForm
       item
         Width = 50
       end>
-    ExplicitWidth = 955
   end
   object OpenDialog: TOpenDialog
     DefaultExt = 'svg'

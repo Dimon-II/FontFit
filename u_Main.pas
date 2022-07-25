@@ -1504,11 +1504,12 @@ begin
     for j := 2 to sg.ColCount-1 do
     begin
       sg.Cells[j,i] := '';
+{
       if    (sg.cells[0, i] = AnsiLowerCase(sg.cells[0, i]))
         and (sg.cells[0, i] <> AnsiUpperCase(sg.cells[0, i]))
         and (sg.cells[j, 0] <> AnsiLowerCase(sg.cells[j,0]))
       then Continue;
-
+ }
       Gl2 := pointer(sg.Objects[j,0]);
 
       mn:=4096;
