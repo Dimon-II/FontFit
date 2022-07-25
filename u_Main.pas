@@ -94,6 +94,11 @@ type
     Panel3: TPanel;
     seKern: TSynEdit;
     KernPaint: TPaintBox;
+    ToolBar2: TToolBar;
+    ToolButton3: TToolButton;
+    ToolButton7: TToolButton;
+    ToolButton8: TToolButton;
+    ToolButton9: TToolButton;
     procedure tbOpenClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -137,6 +142,8 @@ type
     procedure tbClearKernClick(Sender: TObject);
     procedure ToolButton27Click(Sender: TObject);
     procedure ToolButton26Click(Sender: TObject);
+    procedure sgDrawCell(Sender: TObject; ACol, ARow: Integer; Rect: TRect;
+      State: TGridDrawState);
   private
     { Private declarations }
     procedure ResetFNT;
@@ -492,7 +499,7 @@ end;
 procedure TMainForm.DrawMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
-  if (ssRight in Shift)  then
+//  if (ssRight in Shift)  then
     Draw.BeginDrag(True)
 end;
 
@@ -1016,6 +1023,8 @@ begin
   ZeroXY.x := - 100;
   BrushBitmap:=TBitmap.Create;
   sg.ColWidths[0]:=100;
+//  sg.RowHeights[1] := abs(FontDialog1.Font.Height);
+ // sg.ColWidths[1] := abs(FontDialog1.Font.Height);
   tbClearKern.Click;
 
 //  pnImg.SetBounds(0,0,2048,2048)
@@ -1265,6 +1274,25 @@ begin
   Draw.Invalidate;
 end;
 
+procedure TMainForm.sgDrawCell(Sender: TObject; ACol, ARow: Integer;
+  Rect: TRect; State: TGridDrawState);
+var r:TRect;
+s:string;
+begin
+ if ((ACol=1) and (ARow>1))or
+    ((ARow=1) and (Acol>1)) then
+  with sg.Canvas do begin
+    Brush.Style := bsSolid;
+    FillRect(Rect);
+    Font := FontDialog1.Font;
+    Font.Height := - sg.DefaultRowHeight;
+    R:=Rect;
+    s:=sg.Cells[Acol,ARow];
+    TextRect(r,s , [tfVerticalCenter,tfCenter]);
+  end;
+
+end;
+
 procedure TMainForm.sgSelectCell(Sender: TObject; ACol, ARow: Integer;
   var CanSelect: Boolean);
 begin
@@ -1288,6 +1316,8 @@ begin
   if OpenDialog.Execute then
   begin
     if hFont<>'' then     RemoveFontResource(PChar(hFont));
+    tbBase.Down := false;
+
     SaveDialog1.FileName := OpenDialog.FileName;
     hFont := '';
 
@@ -1328,6 +1358,7 @@ begin
 
     ResetFNT;
     Draw.Invalidate;
+    tbClearKern.Click;
   end;
 end;
 
@@ -1339,12 +1370,16 @@ begin
   treeFNT.Indent:=abs(FontDialog1.Font.Height) div 2;
   treeFNT.Perform( TVM_SETITEMHEIGHT,abs(FontDialog1.Font.Height) , 0);
   treeFNT.Invalidate;
+
+//  sg.RowHeights[1] := abs(FontDialog1.Font.Height);
+//  sg.ColWidths[1] := abs(FontDialog1.Font.Height);
 end;
 
 procedure TMainForm.ToolButton11Click(Sender: TObject);
 var k: Double;
   i: Integer;
 begin
+  if not tbBase.Down then exit;
   k := Abs((BaseRect.Bottom-BaseRect.top)/(GlyphRect.Bottom-GlyphRect.Top));
   for I := 1 to sgGlyph.RowCount-1 do
     PathZoom(i,k);
@@ -1528,7 +1563,8 @@ begin
       begin
          nod := treeFNT.Selections[i].Item[j].Data;
          if nod.Attribute['d']='' then continue;
-         if sg.Cols[0].IndexOf(nod.Attribute['glyph-name'])=-1 then
+//         if sg.Cols[0].IndexOf(nod.Attribute['glyph-name'])=-1 then
+         if sg.Cols[1].IndexOfObject(nod)=-1 then
          begin
            if sg.Cells[0,sg.RowCount-1]<>'' then
              sg.RowCount := sg.RowCount+1;
@@ -1556,7 +1592,8 @@ begin
     else begin
       nod := treeFNT.Selections[i].Data;
       if nod.Attribute['d']='' then continue;
-      if sg.Cols[0].IndexOf(nod.Attribute['glyph-name'])=-1 then
+//      if sg.Cols[0].IndexOf(nod.Attribute['glyph-name'])=-1 then
+      if sg.Cols[1].IndexOfObject(nod)=-1 then
       begin
         if sg.Cells[0,sg.RowCount-1]<>'' then
           sg.RowCount := sg.RowCount+1;
@@ -1684,7 +1721,8 @@ begin
       begin
          nod := treeFNT.Selections[i].Item[j].Data;
          if nod.Attribute['d']='' then continue;
-         if sg.Rows[0].IndexOf(nod.Attribute['glyph-name'])=-1 then
+//         if sg.Rows[0].IndexOf(nod.Attribute['glyph-name'])=-1 then
+         if sg.Rows[1].IndexOfObject(nod)=-1 then
          begin
            if sg.Cells[sg.ColCount-1,0]<>'' then
              sg.ColCount := sg.ColCount+1;
@@ -1713,7 +1751,8 @@ begin
     else begin
       nod := treeFNT.Selections[i].Data;
       if nod.Attribute['d']='' then continue;
-      if sg.Rows[0].IndexOf(nod.Attribute['glyph-name'])=-1 then
+//      if sg.Rows[0].IndexOf(nod.Attribute['glyph-name'])=-1 then
+      if sg.Rows[1].IndexOfObject(nod)=-1 then
       begin
         if sg.Cells[sg.ColCount-1,0]<>'' then
           sg.ColCount := sg.ColCount+1;
@@ -1769,6 +1808,7 @@ end;
 
 procedure TMainForm.ToolButton4Click(Sender: TObject);
 begin
+  if not tbBase.Down then exit;
   sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
     - ((BaseRect.Bottom+BaseRect.top) - (GlyphRect.Bottom+GlyphRect.Top)) div 2 );
   Draw.invalidate;
@@ -1777,6 +1817,7 @@ end;
 
 procedure TMainForm.ToolButton5Click(Sender: TObject);
 begin
+  if not tbBase.Down then exit;
   sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
     - BaseRect.Bottom + GlyphRect.Bottom );
   Draw.invalidate;
@@ -1785,6 +1826,8 @@ end;
 
 procedure TMainForm.ToolButton6Click(Sender: TObject);
 begin
+  if not tbBase.Down then exit;
+
   sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
     - BaseRect.Top + GlyphRect.Top );
   Draw.invalidate;
@@ -1837,7 +1880,7 @@ begin
 
 
      ParsePath(Nod.Attribute['d']);
-     Draw.Invalidate;
+     Draw.OnPaint(Draw);
      Application.ProcessMessages;
      for i:= 1 to sgGlyph.RowCount-1 do
        PathRel(i);
@@ -1866,6 +1909,7 @@ procedure TMainForm.PathAbs(Idx: integer);
 var i,n1,n2:Integer;
   xy:array [0..1] of double;
 begin
+  if sgGlyph.Cells[1,Idx]='' then exit;
   n1:=2;
   n2:=-1;
   xy[0]:=StrToFloatDef(sgGlyph.Cells[9,idx],0);
@@ -1888,6 +1932,8 @@ procedure TMainForm.PathRel(Idx: integer);
 var i,n1,n2:Integer;
   xy:array [0..1] of double;
 begin
+  if sgGlyph.Cells[1,Idx]='' then exit;
+
   n1:=2;
   n2:=-1;
   xy[0]:=StrToXY(sgGlyph.Cells[9,idx],0);
