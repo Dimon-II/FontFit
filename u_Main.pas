@@ -8,7 +8,7 @@ uses
   Vcl.ExtDlgs, Vcl.ToolWin, profixxml,
   Vcl.Samples.Spin, Winapi.CommCtrl, SynEditHighlighter, SynHighlighterXML,
   SynEdit, Vcl.Grids, System.Math, System.ImageList, Vcl.ImgList,
-  SynHighlighterIni, System.NetEncoding;
+  SynHighlighterIni, System.NetEncoding, System.Actions, Vcl.ActnList;
 
 type
   TFontFace=record
@@ -35,17 +35,17 @@ type
     tsGlyph: TTabSheet;
     tsXML: TTabSheet;
     pnFont: TPanel;
-    tbrFont: TToolBar;
-    tbOpen: TToolButton;
-    ToolButton2: TToolButton;
+    tbrFile: TToolBar;
+    tbFontOpen: TToolButton;
+    tbFontSave: TToolButton;
     treeFNT: TTreeView;
-    OpenDialog: TOpenDialog;
+    dlgOpen: TOpenDialog;
     tsHeap: TTabSheet;
     lbUnicodeRegions: TListBox;
     StatusBar1: TStatusBar;
-    ToolButton1: TToolButton;
-    ToolButton10: TToolButton;
-    FontDialog1: TFontDialog;
+    tbSep8: TToolButton;
+    tbFontConfig: TToolButton;
+    dlgFont: TFontDialog;
     sbrPaint: TScrollBox;
     pnImg: TPanel;
     Draw: TPaintBox;
@@ -53,56 +53,84 @@ type
     SynXMLSyn1: TSynXMLSyn;
     sgGlyph: TStringGrid;
     sgBase: TStringGrid;
-    ImageList1: TImageList;
+    ilMain: TImageList;
     Panel1: TPanel;
     Panel2: TPanel;
     Label1: TLabel;
     seZoom: TSpinEdit;
     seGrid: TSpinEdit;
     Label2: TLabel;
-    tbrGlyph: TToolBar;
-    tbBase: TToolButton;
-    ToolButton6: TToolButton;
-    ToolButton5: TToolButton;
-    ToolButton4: TToolButton;
-    ToolButton11: TToolButton;
-    ToolButton12: TToolButton;
-    SaveDialog1: TSaveDialog;
-    ToolButton13: TToolButton;
-    ToolButton14: TToolButton;
-    ToolButton15: TToolButton;
-    ToolButton16: TToolButton;
-    ToolButton17: TToolButton;
-    ToolButton18: TToolButton;
-    ToolButton19: TToolButton;
-    ToolButton20: TToolButton;
-    ToolButton21: TToolButton;
-    ToolButton22: TToolButton;
-    ToolButton23: TToolButton;
+    dlgSave: TSaveDialog;
     tsKern: TTabSheet;
     sg: TStringGrid;
     SynIniSyn1: TSynIniSyn;
-    ToolBar1: TToolBar;
+    tbgKerning: TToolBar;
     ToolButton24: TToolButton;
     ToolButton26: TToolButton;
-    ProgressBar1: TProgressBar;
     ToolButton25: TToolButton;
     ToolButton27: TToolButton;
     tbClearKern: TToolButton;
-    ToolButton29: TToolButton;
-    ToolButton30: TToolButton;
+    tbSep6: TToolButton;
+    tbSep7: TToolButton;
     Panel3: TPanel;
     seKern: TSynEdit;
     KernPaint: TPaintBox;
-    ToolBar2: TToolBar;
-    ToolButton3: TToolButton;
-    ToolButton7: TToolButton;
-    ToolButton8: TToolButton;
-    ToolButton9: TToolButton;
-    procedure tbOpenClick(Sender: TObject);
+    tbrXML: TToolBar;
+    tbApplyXML: TToolButton;
+    tbResetXML: TToolButton;
+    alMain: TActionList;
+    aApply: TAction;
+    aReset: TAction;
+    aGoToZero: TAction;
+    aSetBase: TAction;
+    aAlignTop: TAction;
+    aAlignDown: TAction;
+    aAlignMidle: TAction;
+    aAlignHeight: TAction;
+    aLeftEdge: TAction;
+    aMoveLeft: TAction;
+    aMoveRight: TAction;
+    aRightEdge: TAction;
+    aEdgeLeft: TAction;
+    aEdgeRight: TAction;
+    aKerningRows: TAction;
+    aKerningCols: TAction;
+    aKerningCalc: TAction;
+    aKerningApply: TAction;
+    aKerningClear: TAction;
+    aFontOpen: TAction;
+    aFontSave: TAction;
+    aFontConfig: TAction;
+    aStopCalc: TAction;
+    tbStopCalc: TToolButton;
+    pbrProcessing: TProgressBar;
+    pscrGlyph: TPageScroller;
+    tbrGlyph: TToolBar;
+    tbGoToZero: TToolButton;
+    tbApply: TToolButton;
+    tbSep1: TToolButton;
+    tbReset: TToolButton;
+    tbSep2: TToolButton;
+    tbSetBase: TToolButton;
+    tbAlignUp: TToolButton;
+    tbAlignDown: TToolButton;
+    tbSep3: TToolButton;
+    tbAlignMidle: TToolButton;
+    tbAlignHeight: TToolButton;
+    tbSep4: TToolButton;
+    tbLeftEdge: TToolButton;
+    tbMoveLeft: TToolButton;
+    tbMoveRight: TToolButton;
+    tbSep5: TToolButton;
+    ToolButton22: TToolButton;
+    ToolButton20: TToolButton;
+    ToolButton21: TToolButton;
+    aMoveUp: TAction;
+    aMoveDown: TAction;
+    ToolButton1: TToolButton;
+    ToolButton2: TToolButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure ToolButton10Click(Sender: TObject);
     procedure treeFNTAdvancedCustomDrawItem(Sender: TCustomTreeView;
       Node: TTreeNode; State: TCustomDrawState; Stage: TCustomDrawStage;
       var PaintImages, DefaultDraw: Boolean);
@@ -119,31 +147,45 @@ type
       State: TDragState; var Accept: Boolean);
     procedure seZoomChange(Sender: TObject);
     procedure seGridChange(Sender: TObject);
-    procedure tbBaseClick(Sender: TObject);
-    procedure ToolButton6Click(Sender: TObject);
-    procedure ToolButton5Click(Sender: TObject);
-    procedure ToolButton4Click(Sender: TObject);
-    procedure ToolButton11Click(Sender: TObject);
-    procedure DrawDblClick(Sender: TObject);
-    procedure ToolButton12Click(Sender: TObject);
-    procedure ToolButton2Click(Sender: TObject);
-    procedure ToolButton13Click(Sender: TObject);
-    procedure ToolButton17Click(Sender: TObject);
-    procedure ToolButton18Click(Sender: TObject);
-    procedure ToolButton19Click(Sender: TObject);
-    procedure ToolButton22Click(Sender: TObject);
-    procedure ToolButton20Click(Sender: TObject);
-    procedure ToolButton21Click(Sender: TObject);
-    procedure ToolButton24Click(Sender: TObject);
     procedure KernPaintPaint(Sender: TObject);
     procedure sgSelectCell(Sender: TObject; ACol, ARow: Integer;
       var CanSelect: Boolean);
-    procedure ToolButton25Click(Sender: TObject);
-    procedure tbClearKernClick(Sender: TObject);
-    procedure ToolButton27Click(Sender: TObject);
-    procedure ToolButton26Click(Sender: TObject);
     procedure sgDrawCell(Sender: TObject; ACol, ARow: Integer; Rect: TRect;
       State: TGridDrawState);
+    procedure aApplyExecute(Sender: TObject);
+    procedure aResetExecute(Sender: TObject);
+    procedure aGoToZeroExecute(Sender: TObject);
+    procedure aSetBaseExecute(Sender: TObject);
+    procedure aAlignTopExecute(Sender: TObject);
+    procedure aAlignDownExecute(Sender: TObject);
+    procedure aAlignMidleExecute(Sender: TObject);
+    procedure aAlignHeightExecute(Sender: TObject);
+    procedure aAlignTopUpdate(Sender: TObject);
+    procedure aApplyUpdate(Sender: TObject);
+    procedure aSetBaseUpdate(Sender: TObject);
+    procedure aLeftEdgeExecute(Sender: TObject);
+    procedure aMoveLeftExecute(Sender: TObject);
+    procedure aMoveRightExecute(Sender: TObject);
+    procedure aRightEdgeExecute(Sender: TObject);
+    procedure aEdgeLeftExecute(Sender: TObject);
+    procedure aEdgeRightExecute(Sender: TObject);
+    procedure aRightEdgeUpdate(Sender: TObject);
+    procedure aKerningRowsExecute(Sender: TObject);
+    procedure aKerningColsExecute(Sender: TObject);
+    procedure aKerningClearExecute(Sender: TObject);
+    procedure aKerningCalcExecute(Sender: TObject);
+    procedure aKerningApplyExecute(Sender: TObject);
+    procedure aFontOpenExecute(Sender: TObject);
+    procedure aFontSaveExecute(Sender: TObject);
+    procedure aFontConfigExecute(Sender: TObject);
+    procedure aFontSaveUpdate(Sender: TObject);
+    procedure aResetUpdate(Sender: TObject);
+    procedure aStopCalcExecute(Sender: TObject);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+    procedure aKerningRowsUpdate(Sender: TObject);
+    procedure aKerningCalcUpdate(Sender: TObject);
+    procedure aMoveUpExecute(Sender: TObject);
+    procedure aMoveDownExecute(Sender: TObject);
   private
     { Private declarations }
     procedure ResetFNT;
@@ -161,6 +203,8 @@ type
     BaseRect,GlyphRect:TRect;
     Nod:TXML_Nod;
     BrushBitmap:TBitmap;
+    FocusedNode:TTreeNode;
+    StopFlag:boolean;
     function StrToXY(s:string;Def:integer):double;
     procedure DeltaPolyBezierTo(const Points: array of TPoint;ZeroXY:Tpoint);
     procedure SvgArcTo(Curr:TPoint; rx,ry:Integer; ax:double; fa, fs:boolean; x,y:integer; Canvas:TCanvas);
@@ -169,6 +213,9 @@ type
     procedure ApplyGlyph;
     procedure DrawGlypf(ACanvas:TCanvas; AGlyph:TGlyph; dx,dy:Integer);
     procedure ExistKerning;
+    procedure RecalcGlyph(Glyph:TGlyph; Nod:TXML_Nod);
+
+    procedure ForEachSelection(AEvent:TNotifyEvent);
 
   end;
 
@@ -390,6 +437,623 @@ Begin
 End;
 
 
+procedure TMainForm.aAlignDownExecute(Sender: TObject);
+begin
+  if Sender=nil then
+  begin
+    sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
+      - BaseRect.Bottom + GlyphRect.Bottom );
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aAlignDownExecute)
+end;
+
+procedure TMainForm.aAlignHeightExecute(Sender: TObject);
+var k: Double;
+  i: Integer;
+begin
+  if Sender=nil then
+  begin
+    k := Abs((BaseRect.Bottom-BaseRect.top)/(GlyphRect.Bottom-GlyphRect.Top));
+    for I := 1 to sgGlyph.RowCount-1 do
+      PathZoom(i,k);
+
+    sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
+      - BaseRect.Top + GlyphRect.Top*k );
+
+    sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0)
+      + GlyphRect.Left - GlyphRect.Left*k );
+
+    FontFace.right:= Round(
+      FontFace.right - GlyphRect.Width + GlyphRect.Width*k );
+
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aAlignHeightExecute)
+end;
+
+procedure TMainForm.aAlignMidleExecute(Sender: TObject);
+begin
+  if Sender=nil then
+  begin
+    sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
+      - ((BaseRect.Bottom+BaseRect.top) - (GlyphRect.Bottom+GlyphRect.Top)) div 2 );
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aAlignMidleExecute)
+end;
+
+procedure TMainForm.aAlignTopExecute(Sender: TObject);
+begin
+  if Sender=nil then
+  begin
+    sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
+      - BaseRect.Top + GlyphRect.Top );
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aAlignTopExecute)
+end;
+
+procedure TMainForm.aAlignTopUpdate(Sender: TObject);
+begin
+  TAction(Sender).Enabled := tbSetBase.Down and (treeFNT.SelectionCount>0);
+end;
+
+procedure TMainForm.aApplyExecute(Sender: TObject);
+begin
+  Nod.ResetXml(seGlyph.Text);
+  seGlyph.Modified := False;
+end;
+
+procedure TMainForm.aApplyUpdate(Sender: TObject);
+begin
+  TAction(Sender).Enabled := (Nod <> nil) and (seGlyph.Modified);
+end;
+
+procedure TMainForm.aEdgeLeftExecute(Sender: TObject);
+begin
+  if Sender=nil then
+  begin
+    FontFace.right:= FontFace.right - Round(seGrid.Value / zm );
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aEdgeLeftExecute)
+end;
+
+procedure TMainForm.aEdgeRightExecute(Sender: TObject);
+begin
+  if Sender=nil then
+  begin
+    FontFace.right:= FontFace.right + Round(seGrid.Value / zm );
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aEdgeRightExecute)
+end;
+
+procedure TMainForm.aFontConfigExecute(Sender: TObject);
+begin
+  dlgFont.Execute();
+  treeFNT.Indent:=abs(dlgFont.Font.Height) div 2;
+  treeFNT.Perform( TVM_SETITEMHEIGHT,abs(dlgFont.Font.Height) , 0);
+  treeFNT.Invalidate;
+end;
+
+procedure TMainForm.aFontOpenExecute(Sender: TObject);
+begin
+  if dlgOpen.Execute then
+  begin
+    if hFont<>'' then  RemoveFontResource(PChar(hFont));
+    tbSetBase.Down := false;
+    Nod := nil;
+
+    dlgSave.FileName := dlgOpen.FileName;
+    hFont := '';
+
+    FNT.LoadFromFile(dlgOpen.FileName);
+
+    if FileExists(ChangeFileExt(dlgOpen.FileName,'.OTF')) then
+      hFont := ChangeFileExt(dlgOpen.FileName,'.OTF')
+    else
+    if FileExists(ChangeFileExt(dlgOpen.FileName,'.TTF')) then
+      hFont := ChangeFileExt(dlgOpen.FileName,'.TTF');
+
+    if hFont<>'' then
+      AddFontResourceEx(PChar(hFont), FR_PRIVATE ,nil);
+    SendMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0) ;
+
+    with FNT.Node['svg'].Node['defs'].Node['font'].Node['font-face'] do
+    begin
+      FontFace.font_family := Attribute['font-family'];
+      FontFace.units_per_em := Round(StrToFloatDef( Attribute['units-per-em'], 2048));
+      FontFace.ascent := Round(StrToFloatDef( Attribute['ascent'], 1536));
+      FontFace.descent := Round(StrToFloatDef( Attribute['descent'], -512));
+      FontFace.x_height := Round(StrToFloatDef( Attribute['x-height'], 768));
+      FontFace.cap_height := Round(StrToFloatDef( Attribute['cap-height'], 1024));
+    end;
+
+    ZeroXY.y :=  - FontFace.ascent ;
+    if seZoom.Value>0 then
+      ZeroXY.y := ZeroXY.y * seZoom.Value
+    else
+      ZeroXY.y := -ZeroXY.y div seZoom.Value;
+    ZeroXY.x := - 100;
+
+//    hFontName := FNT.Node['svg'].Node['defs'].Node['font'].Attribute['id'];
+    StatusBar1.Panels[0].Text:='Font: '+ FontFace.font_family;
+    dlgFont.Font.Name := FontFace.font_family;
+    treeFNT.Indent:=abs(dlgFont.Font.Height) div 2;
+    treeFNT.Perform( TVM_SETITEMHEIGHT,abs(dlgFont.Font.Height) , 0);
+
+    ResetFNT;
+    DrawPaint(Draw);
+    tbClearKern.Click;
+  end;
+end;
+
+procedure TMainForm.aFontSaveExecute(Sender: TObject);
+begin
+  if dlgSave.Execute() then
+    FNT.SaveToFile(dlgSave.FileName);
+end;
+
+procedure TMainForm.aFontSaveUpdate(Sender: TObject);
+begin
+ taction(Sender).Enabled := treeFNT.Items.Count>0;
+end;
+
+procedure TMainForm.aGoToZeroExecute(Sender: TObject);
+begin
+//  seZoom.Value := -3;
+  ZeroXY.y :=  round(- FontFace.ascent * zm);
+  ZeroXY.x := - 100;
+  DrawPaint(Draw);
+end;
+
+procedure TMainForm.aKerningApplyExecute(Sender: TObject);
+var
+  i,j,k:integer;
+  n1,nod:TXML_Nod;
+  s:string;
+  sl1:TStringList;
+  sl2:TStringList;
+begin
+
+  if MessageDlg('Apply new kernig settings?', TMsgDlgType.mtConfirmation, [mbYes,mbNo],0)<>mrYes then exit;
+
+  pbrProcessing.Position:=0;
+  pbrProcessing.Max := FNT.Node['svg'].Node['defs'].Node['font'].Nodes.Count + sg.RowCount-2;
+  pbrProcessing.Visible := True;
+  sl1:=TStringList.Create;
+  sl1.CaseSensitive:=True;
+  sl2:=TStringList.Create;
+  sl2.CaseSensitive:=True;
+
+
+  nod := FNT;
+  while nod<>nil do
+  begin
+    pbrProcessing.Position:=pbrProcessing.Position+1;
+    Application.ProcessMessages;
+    n1 := nod.next;
+    if nod.LocalName='hkern' then
+    begin
+
+      if nod.Attribute['g1']<>'' then
+      begin
+        sl1.CommaText := nod.Attribute['g1'];
+        sl2.CommaText := nod.Attribute['g2'];
+        for i := 2 to sg.RowCount-1 do
+          if sl1.IndexOf(sg.Cols[0][i])>-1 then
+          begin
+            for j := 2 to sg.ColCount-1 do
+              if sl2.IndexOf(sg.Rows[0][j])>-1 then
+              begin
+                sl2.Delete(sl2.IndexOf(sg.Rows[0][j]));
+                if sl2.count=0 then break;
+              end;
+            if sl2.count=0 then break;
+          end;
+        if sl2.count=0 then
+          nod.Free
+        else
+          nod.Attribute['g2'] := sl2.CommaText;
+      end
+      else
+
+      if nod.Attribute['u1']<>'' then
+      begin
+        sl1.Text := sg.Cols[1].Text;
+        sl2.Text := sg.Rows[1].Text;
+        if (sl1.IndexOf(THTMLEncoding.HTML.Decode(nod.Attribute['u1']))>-1) and
+           (sl2.IndexOf(THTMLEncoding.HTML.Decode(nod.Attribute['u2']))>-1)
+        then
+          nod.Free;
+      end;
+
+
+
+
+{
+      for i := 2 to sg.RowCount-1 do
+        if (THTMLEncoding.HTML.Decode(nod.Attribute['u1'])=sg.Cells[1,i]) or
+           (pos(','+sg.Cells[0,i]+',',  ','+nod.Attribute['g1']+',')>0)
+        then
+        begin
+          for j := 2 to sg.ColCount-1 do
+            if (THTMLEncoding.HTML.Decode(nod.Attribute['u2'])=sg.Cells[j,1]) then
+            begin
+               nod.Attribute['u2'] := '';
+               break;
+            end
+            else
+            if  (pos(','+sg.Cells[j,0]+',',  ','+nod.Attribute['g2']+',')>0)
+            then begin
+              s := StringReplace(',' + nod.Attribute['g2'] +',', ','+sg.Cells[j,0]+',', ',',[]);
+              if s[1]=',' then
+                delete(s,1,1);
+              if Copy(s,length(s),1) =',' then
+                delete(s,length(s),1);
+              nod.Attribute['g2'] := s;
+              break;
+            end;
+        end;
+}
+    end;
+    nod := n1;
+  end;
+  sl1.free;
+  sl2.free;
+
+  for i := 2 to sg.RowCount-1 do
+  begin
+    pbrProcessing.Position:=pbrProcessing.Position+1;
+    for j := 2 to sg.ColCount-1 do
+       if sg.Cells[j,i] <> '' then
+       begin
+         sg.Objects[j,i] := nil;
+         nod := nil;
+         for k := j-1 downto 2 do
+           if sg.Cells[j,i]=sg.Cells[k,i] then
+           begin
+             nod :=pointer(sg.Objects[k,i]);
+             break;
+           end;
+         if nod=nil then
+         begin
+            nod := FNT.Node['svg'].Node['defs'].Node['font'].Nodes.Add;
+            nod.LocalName := 'hkern';
+            nod.Attribute['g1'] :=sg.Cells[0,i];
+            nod.Attribute['k'] :=sg.Cells[j,i];
+         end;
+         if nod.Attribute['g2']<>'' then
+           nod.Attribute['g2'] := nod.Attribute['g2'] + ',';
+         nod.Attribute['g2'] := nod.Attribute['g2'] + sg.Cells[j,0];
+         sg.Objects[j,i] := Nod;
+       end;
+  end;
+
+  pbrProcessing.Visible := False;
+end;
+
+procedure TMainForm.aKerningCalcExecute(Sender: TObject);
+var
+  i,j,k,l:integer;
+  Gl1:TGlyph;
+  Gl2:TGlyph;
+  nod:TXML_Nod;
+  mn,mm,dx:double;
+  p11,p12,p21,p22,x1,y1:XYZ;
+  min_tst, min_set, max_tst, max_set, prcz:Integer;
+
+begin
+  pbrProcessing.Max := sg.RowCount;
+  pbrProcessing.Visible := True;
+  aKerningCalc.Enabled := False;
+  aKerningRows.Enabled := False;
+  aKerningCols.Enabled := False;
+  aKerningApply.Enabled := False;
+  aKerningClear.Enabled := False;
+
+  aStopCalc.Enabled := True;
+  StopFlag:= False;
+  try
+
+  p11.z:=0;
+  p12.z:=0;
+  p21.z:=0;
+  p22.z:=0;
+
+
+  min_tst := StrToIntDef(seKern.Lines.Values['min.tst'], -4096);
+  min_set := StrToIntDef(seKern.Lines.Values['min.set'], 90);
+  max_tst := StrToIntDef(seKern.Lines.Values['max.tst'],4096);
+  max_set := StrToIntDef(seKern.Lines.Values['max.set'],120);
+  prcz :=StrToIntDef(seKern.Lines.Values['precision'],1);
+
+  for i := 2 to sg.ColCount-1 do
+  begin
+    Gl1 := pointer(sg.Objects[i,0]);
+    if Gl1 = nil then continue;
+    RecalcGlyph(Gl1,Pointer(sg.Objects[i,1]));
+  end;
+
+  pbrProcessing.Position :=1;
+  for i := 2 to sg.RowCount-1 do
+  begin
+    pbrProcessing.Position := i;
+    Application.ProcessMessages;
+    Gl1 := pointer(sg.Objects[0, i]);
+    SetLength(Gl1.rng,sg.ColCount);
+    if Gl1=nil then continue;
+    RecalcGlyph(Gl1,Pointer(sg.Objects[1, i]));
+
+    if Length(Gl1.PtBuf)<3 then continue;
+
+
+
+    for j := 2 to sg.ColCount-1 do
+    begin
+    Application.ProcessMessages;
+      if StopFlag then abort;
+      sg.Cells[j,i] := '';
+{
+      if    (sg.cells[0, i] = AnsiLowerCase(sg.cells[0, i]))
+        and (sg.cells[0, i] <> AnsiUpperCase(sg.cells[0, i]))
+        and (sg.cells[j, 0] <> AnsiLowerCase(sg.cells[j,0]))
+      then Continue;
+ }
+      Gl2 := pointer(sg.Objects[j,0]);
+      if Length(Gl2.PtBuf)<3 then continue;
+
+      mn:=4096;
+      for k := 1 to Length(Gl1.PtBuf)-1 do
+        if Gl1.TpBuf[k]<>6 then
+        begin
+          p11.x := Gl1.PtBuf[k-1].X;
+          p11.y := Gl1.PtBuf[k-1].Y;
+          p12.x := Gl1.PtBuf[k].X;
+          p12.y := Gl1.PtBuf[k].Y;
+
+          for l := 1 to Length(Gl2.PtBuf)-1 do
+          if Gl2.TpBuf[l]<>6 then
+          begin
+            p21.x := Gl2.PtBuf[l-1].X + Gl1.Right;
+            p21.y := Gl2.PtBuf[l-1].Y;
+            p22.x := Gl2.PtBuf[l].X + Gl1.Right;
+            p22.y := Gl2.PtBuf[l].Y;
+            Dist(p11,p12,p21,p22,x1,y1,mm);
+//            mm := Sqrt(sqr(x1.x-y1.x) + sqr(x1.y-y1.y) );
+//            mn := abs(x1.x-y1.x);
+            if mm<mn then
+            begin
+              mn := mm;
+              dx := abs(x1.x-y1.x);
+              Gl1.rng[j-2]:=Rect(round(x1.x), round(x1.y), round(y1.x), round(y1.y));
+            end;
+          end;
+//         sg.Cells[i, j-1] := IntToStr(Round(mn))
+        end;
+{
+      if mn < min_tst then
+        sg.Cells[j,i] := FloatToStr(Round(-(min_set - mn)/prcz)*prcz)
+      else
+      if mn > max_tst then
+        sg.Cells[j,i] := FloatToStr(Round(-(max_set - mn)/prcz)*prcz);
+}
+      if mn < min_tst then
+        sg.Cells[j,i] := FloatToStr(Round(-(min_set - dx)/prcz)*prcz)
+      else
+      if mn > max_tst then
+        sg.Cells[j,i] := FloatToStr(Round(-(max_set - dx)/prcz)*prcz);
+
+
+
+      if sg.Cells[j,i] = '0' then
+        sg.Cells[j,i] := '';
+    end;
+  end;
+  finally
+    aKerningRows.Enabled := true;
+    aKerningCols.Enabled := true;
+    aKerningApply.Enabled := true;
+    aKerningClear.Enabled := true;
+
+    pbrProcessing.Visible := False;
+    aKerningCalc.Enabled := true;
+    aStopCalc.Enabled := false;
+
+  end;
+end;
+
+procedure TMainForm.aKerningCalcUpdate(Sender: TObject);
+begin
+  taction(Sender).Enabled := (sg.Objects[0, 2]<>nil) and (sg.Objects[2,0 ]<>nil)
+end;
+
+procedure TMainForm.aKerningClearExecute(Sender: TObject);
+var i:Integer;
+begin
+  for I := 0 to sg.rowcount-1 do
+    if sg.Objects[0,i]<>nil then
+      FreeAndNil(sg.Objects[0,i]);
+
+  for I := 0 to sg.colcount-1 do
+    if sg.Objects[i,0]<>nil then
+      FreeAndNil(sg.Objects[i,0]);
+
+  sg.RowCount:=3;
+  sg.ColCount:=3;
+  sg.rows[0].text:='GLYPH';
+  sg.rows[1].text:='';
+  sg.rows[2].text:='';
+  sg.cells[1,1]:='chr';
+end;
+
+procedure TMainForm.aKerningColsExecute(Sender: TObject);
+var i,j,k,l,z:integer;
+  nod:txml_nod;
+  Gl:TGlyph;
+begin
+  for i := 0 to treeFNT.SelectionCount-1 do
+  begin
+    if treeFNT.Selections[i].HasChildren then
+      for j := 0 to treeFNT.Selections[i].Count-1 do
+      begin
+         nod := treeFNT.Selections[i].Item[j].Data;
+//         if nod.Attribute['d']='' then continue;
+         if sg.Rows[1].IndexOfObject(nod)=-1 then
+         begin
+           if sg.Cells[sg.ColCount-1,0]<>'' then
+             sg.ColCount := sg.ColCount+1;
+           sg.Cells[sg.ColCount-1,0] := nod.Attribute['glyph-name'];
+           sg.Cells[sg.ColCount-1,1] :=  THTMLEncoding.HTML.Decode(nod.Attribute['unicode']);
+
+           Gl:=TGlyph.Create;
+           sg.Objects[sg.ColCount-1,0] := Gl;
+           sg.Objects[sg.ColCount-1,1] := Nod;
+           RecalcGlyph(Gl, Nod);
+         end;
+      end
+    else begin
+      nod := treeFNT.Selections[i].Data;
+//      if nod.Attribute['d']='' then continue;
+      if sg.Rows[1].IndexOfObject(nod)=-1 then
+      begin
+        if sg.Cells[sg.ColCount-1,0]<>'' then
+          sg.ColCount := sg.ColCount+1;
+        sg.Cells[sg.ColCount-1,0] := nod.Attribute['glyph-name'];
+        sg.Cells[sg.ColCount-1,1] :=  THTMLEncoding.HTML.Decode(nod.Attribute['unicode']);
+        Gl:=TGlyph.Create;
+        sg.Objects[sg.ColCount-1,0] := Gl;
+        sg.Objects[sg.ColCount-1,1] := Nod;
+        RecalcGlyph(Gl,nod);
+      end;
+
+    end;
+  end;
+  if (sg.Cells[0,2]<>'') and (sg.Cells[2,0]<>'') then
+    ExistKerning;
+end;
+
+procedure TMainForm.aKerningRowsExecute(Sender: TObject);
+var i,j,k,l,z:integer;
+  nod:txml_nod;
+  Gl:TGlyph;
+begin
+  for i := 0 to treeFNT.SelectionCount-1 do
+  begin
+    if treeFNT.Selections[i].HasChildren then
+      for j := 0 to treeFNT.Selections[i].Count-1 do
+      begin
+         nod := treeFNT.Selections[i].Item[j].Data;
+//         if nod.Attribute['d']='' then continue;
+         if sg.Cols[1].IndexOfObject(nod)=-1 then
+         begin
+           if sg.Cells[0,sg.RowCount-1]<>'' then
+             sg.RowCount := sg.RowCount+1;
+           sg.Rows[sg.RowCount-1].Clear;
+           sg.Cells[0,sg.RowCount-1] := nod.Attribute['glyph-name'];
+           sg.Cells[1,sg.RowCount-1] := THTMLEncoding.HTML.Decode(nod.Attribute['unicode']);
+           Gl:=TGlyph.Create;
+           sg.Objects[0, sg.RowCount-1] := Gl;
+           sg.Objects[1, sg.RowCount-1] := nod;
+           RecalcGlyph(Gl,nod);
+         end;
+      end
+    else begin
+      nod := treeFNT.Selections[i].Data;
+//      if nod.Attribute['d']='' then continue;
+      if sg.Cols[1].IndexOfObject(nod)=-1 then
+      begin
+        if sg.Cells[0,sg.RowCount-1]<>'' then
+          sg.RowCount := sg.RowCount+1;
+        sg.Rows[sg.RowCount-1].Clear;
+
+        sg.Cells[0,sg.RowCount-1] := nod.Attribute['glyph-name'];
+        sg.Cells[1,sg.RowCount-1] :=  THTMLEncoding.HTML.Decode(nod.Attribute['unicode']);
+
+        Gl:=TGlyph.Create;
+        sg.Objects[0, sg.RowCount-1] := Gl;
+        sg.Objects[1, sg.RowCount-1] := nod;
+        RecalcGlyph(Gl,nod);
+      end;
+
+    end;
+  end;
+  if (sg.Cells[0,2]<>'') and (sg.Cells[2,0]<>'') then
+    ExistKerning;
+end;
+
+procedure TMainForm.aKerningRowsUpdate(Sender: TObject);
+begin
+  TAction(sender).Enabled := treeFNT.SelectionCount>0;
+end;
+
+procedure TMainForm.aLeftEdgeExecute(Sender: TObject);
+begin
+  if Sender=nil then
+  begin
+    sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) - GlyphRect.Left);
+    FontFace.right:= Round(FontFace.right - GlyphRect.Left);
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aLeftEdgeExecute)
+end;
+
+procedure TMainForm.aMoveDownExecute(Sender: TObject);
+begin
+  if Sender=nil then
+  begin
+    sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0) - seGrid.Value / zm );
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aMoveDownExecute)
+end;
+
+procedure TMainForm.aMoveLeftExecute(Sender: TObject);
+begin
+  if Sender=nil then
+  begin
+    sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) - seGrid.Value / zm );
+    FontFace.right:= Round(FontFace.right - seGrid.Value / zm);
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aMoveLeftExecute)
+end;
+
+procedure TMainForm.aMoveRightExecute(Sender: TObject);
+begin
+
+  if Sender=nil then
+  begin
+    sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) + seGrid.Value / zm );
+    FontFace.right:= Round(FontFace.right + seGrid.Value / zm);
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aMoveRightExecute)
+end;
+
+procedure TMainForm.aMoveUpExecute(Sender: TObject);
+begin
+  if Sender=nil then
+  begin
+    sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0) + seGrid.Value / zm );
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aMoveUpExecute)
+end;
+
 procedure TMainForm.ApplyGlyph;
 var
   s:string;
@@ -425,6 +1089,63 @@ begin
   seGlyph.Modified := True;
 end;
 
+procedure TMainForm.aResetExecute(Sender: TObject);
+var i:Integer;
+begin
+     seGlyph.Lines.Text := Nod.xml;
+     FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
+
+
+     ParsePath(Nod.Attribute['d']);
+     DrawPaint(Draw);
+     Application.ProcessMessages;
+     for i:= 1 to sgGlyph.RowCount-1 do
+       PathRel(i);
+     seGlyph.Modified := False;
+end;
+
+procedure TMainForm.aResetUpdate(Sender: TObject);
+begin
+  TAction(Sender).Enabled := (Nod <> nil) and (seGlyph.Modified);
+end;
+
+procedure TMainForm.aRightEdgeExecute(Sender: TObject);
+begin
+  if Sender=nil then
+  begin
+    FontFace.right:= Round(GlyphRect.Right);
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aRightEdgeExecute)
+end;
+
+procedure TMainForm.aRightEdgeUpdate(Sender: TObject);
+begin
+  TAction(Sender).Enabled := (treeFNT.SelectionCount>0);
+end;
+
+procedure TMainForm.aSetBaseExecute(Sender: TObject);
+var i:integer;
+begin
+  BaseRect := GlyphRect;
+  FontFace.baseright := FontFace.right;
+  sgBase.RowCount := sgGlyph.RowCount;
+  for i:= 0 to sgGlyph.RowCount-1 do
+    sgBase.Rows[i].Assign(sgGlyph.Rows[i]);
+  DrawPaint(Draw);
+end;
+
+procedure TMainForm.aSetBaseUpdate(Sender: TObject);
+begin
+  TAction(Sender).Enabled := (Nod <> nil) or tbSetBase.Down;
+end;
+
+procedure TMainForm.aStopCalcExecute(Sender: TObject);
+begin
+  StopFlag:= True;
+end;
+
 procedure TMainForm.DeltaPolyBezierTo(const Points: array of TPoint; ZeroXY:Tpoint);
 var p: array of TPoint;
   i:integer;
@@ -436,13 +1157,6 @@ begin
       p[i].y := Points[i].y - ZeroXY.y;
     end;
     Draw.Canvas.PolyBezierTo(p);
-end;
-
-procedure TMainForm.DrawDblClick(Sender: TObject);
-begin
-  ZeroXY.y :=  - FontFace.ascent div 3 ;
-  ZeroXY.x := - 100;
-  Draw.Invalidate;
 end;
 
 procedure TMainForm.DrawDragOver(Sender, Source: TObject; X, Y: Integer;
@@ -468,7 +1182,7 @@ begin
     ZeroXY.x := ZeroXY.x + MouseStart.x - Mouse.CursorPos.x;
     ZeroXY.y := ZeroXY.y + MouseStart.y - Mouse.CursorPos.y;
     MouseStart := Mouse.CursorPos;
-    Draw.Invalidate
+    DrawPaint(Draw)
   end;
 
   Accept := True;
@@ -521,7 +1235,6 @@ begin
 
   with Draw.Canvas do
   begin
-    if seGrid.Value > 3 then
     begin
       BrushBitmap.Width :=seGrid.Value;
       BrushBitmap.Height :=seGrid.Value;
@@ -535,7 +1248,17 @@ begin
       p0.x:= (8 + 2*seGrid.Value + abs(ZeroXY.x)) mod seGrid.Value;
       p0.y:= (8 + 2*seGrid.Value + abs(ZeroXY.y)) mod seGrid.Value;
 
-      BrushBitmap.Canvas.Pixels[p0.x,p0.y]:=$FF0000;
+      if seGrid.Value > 9 then
+        BrushBitmap.Canvas.Pixels[p0.x,p0.y]:=$A0A000;
+
+      if seGrid.Value > 19 then
+      begin
+        BrushBitmap.Canvas.pen.Color := $FFFFC0;
+        BrushBitmap.Canvas.MoveTo(0, p0.y);
+        BrushBitmap.Canvas.LineTo(seGrid.Value, p0.y);
+        BrushBitmap.Canvas.MoveTo(p0.x, 0);
+        BrushBitmap.Canvas.LineTo(p0.X,seGrid.Value);
+      end;
 
       Pen.Style := psClear;
       Brush.Bitmap:=BrushBitmap;
@@ -586,7 +1309,7 @@ begin
 
     Pen.Width := 1; Pen.Color := $F00000;
 
-    if tbBase.Down then
+    if tbSetBase.Down then
     begin
 
       DrawPath(sgBase, MainForm.Draw.Canvas,Point(ZeroXY.X + round(FontFace.baseright *zm) ,ZeroXY.Y), zm);
@@ -974,9 +1697,9 @@ var
   i,j:integer;
   nod:TXML_Nod;
 begin
-  ProgressBar1.Position:=0;
-  ProgressBar1.Max := FNT.Node['svg'].Node['defs'].Node['font'].Nodes.Count;
-  ProgressBar1.Visible := True;
+  pbrProcessing.Position:=0;
+  pbrProcessing.Max := FNT.Node['svg'].Node['defs'].Node['font'].Nodes.Count;
+  pbrProcessing.Visible := True;
   for i := 2 to sg.RowCount-1 do
     for j := 2 to sg.ColCount-1 do
       sg.Cells[j,i] := '';
@@ -984,7 +1707,7 @@ begin
   nod := FNT;
   while nod<>nil do
   begin
-    ProgressBar1.Position:=ProgressBar1.Position+1;
+    pbrProcessing.Position:=pbrProcessing.Position+1;
     Application.ProcessMessages;
     if nod.LocalName='hkern' then
     begin
@@ -1002,9 +1725,49 @@ begin
       end;
     nod := nod.next;
   end;
-  ProgressBar1.Visible := False;
+  pbrProcessing.Visible := False;
 end;
 
+
+procedure TMainForm.ForEachSelection(AEvent: TNotifyEvent);
+var tn: TTreeNode;
+  i: integer;
+begin
+  if (treeFNT.SelectionCount>1) or (treeFNT.Selected.HasChildren)
+  then
+  begin
+    if MessageDlg('Process all selected glyphs?', TMsgDlgType.mtConfirmation, [mbYes,mbNo],0)<>mrYes then exit;
+    tn := treeFNT.Items[0];
+    while tn<>nil do
+    begin
+      if (tn.Data<>nil) and (tn.Selected or tn.Parent.Selected) then
+      begin
+        Nod := tn.Data;
+        seGlyph.Lines.Text := Nod.xml;
+        FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
+        ParsePath(Nod.Attribute['d']);
+        Draw.OnPaint(Draw);
+        for i:= 1 to sgGlyph.RowCount-1 do
+          PathRel(i);
+        seGlyph.Modified := False;
+
+        AEvent(nil);
+
+        Nod.ResetXml(seGlyph.Text);
+        seGlyph.Modified := False;
+      end;
+      tn := tn.GetNext;
+    end;
+    treeFNTChange(treeFNT, FocusedNode);
+  end
+  else
+    AEvent(nil);
+end;
+
+procedure TMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+begin
+  StopFlag := True;
+end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
@@ -1057,16 +1820,16 @@ begin
 
   KernPaint.Canvas.Pen.Width := 1;
   KernPaint.Canvas.Pen.Color := clBlack;
-  DrawGlypf(KernPaint.Canvas, Gl1, 100 , FontFace.ascent div 12);
+  DrawGlypf(KernPaint.Canvas, Gl1, 100 , 20+ FontFace.ascent div 12);
 
 
   if Gl2 = nil then Exit;
   KernPaint.Canvas.Pen.Style :=psDot;
   KernPaint.Canvas.Pen.Color := clSilver;
-  DrawGlypf(KernPaint.Canvas, Gl2, 100 + Gl1.Right div 12, FontFace.ascent div 12);
+  DrawGlypf(KernPaint.Canvas, Gl2, 100 + Gl1.Right div 12, 20+ FontFace.ascent div 12);
   KernPaint.Canvas.Pen.Style :=psSolid;
   KernPaint.Canvas.Pen.Color := clBlue;
-  DrawGlypf(KernPaint.Canvas, Gl2, 100 + (Gl1.Right - strtointdef(sg.Cells[sg.Col, sg.Row],0)) div 12  , FontFace.ascent div 12);
+  DrawGlypf(KernPaint.Canvas, Gl2, 100 + (Gl1.Right - strtointdef(sg.Cells[sg.Col, sg.Row],0)) div 12  , 20+ FontFace.ascent div 12);
 
 
 
@@ -1078,11 +1841,11 @@ begin
 
     KernPaint.Canvas.MoveTo(
          round(Gl1.rng[sg.col-2].Left/12 + 100 ),
-         round(Gl1.rng[sg.col-2].Top/12 + FontFace.ascent/12));
+         round(Gl1.rng[sg.col-2].Top/12 + FontFace.ascent/12)+20);
 
     KernPaint.Canvas.LineTo(
          round(Gl1.rng[sg.col-2].Right/12 + 100 ),
-         round(Gl1.rng[sg.col-2].Bottom/12 + FontFace.ascent/12));
+         round(Gl1.rng[sg.col-2].Bottom/12 + FontFace.ascent/12)+20);
   end;
 
 end;
@@ -1187,6 +1950,23 @@ begin
   sgGlyph.FixedRows := 1;
 end;
 
+procedure TMainForm.RecalcGlyph(Glyph: TGlyph; Nod: TXML_Nod);
+var z:integer;
+begin
+  Glyph.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
+  draw.Canvas.MoveTo(0,0);
+  ParsePath(Nod.Attribute['d']);
+  BeginPath(Draw.Canvas.Handle);
+  DrawPath(sgGlyph, Draw.Canvas, point(0,0), 1);
+  EndPath(Draw.Canvas.Handle);
+
+  FlattenPath(Draw.Canvas.Handle);
+  z:=GetPath(Draw.Canvas.Handle,nil,nil,0);
+  SetLength(Glyph.PtBuf,z);
+  SetLength(Glyph.TpBuf,z);
+  GetPath(MainForm.Draw.Canvas.Handle,@(Glyph.PtBuf[0]),@(Glyph.TpBuf[0]),z);
+end;
+
 procedure TMainForm.ResetFNT;
 var
   nod:TXML_Nod;
@@ -1266,12 +2046,12 @@ end;
 
 procedure TMainForm.seGridChange(Sender: TObject);
 begin
-  Draw.Invalidate;
+  DrawPaint(Draw);
 end;
 
 procedure TMainForm.seZoomChange(Sender: TObject);
 begin
-  Draw.Invalidate;
+  DrawPaint(Draw);
 end;
 
 procedure TMainForm.sgDrawCell(Sender: TObject; ACol, ARow: Integer;
@@ -1284,7 +2064,7 @@ begin
   with sg.Canvas do begin
     Brush.Style := bsSolid;
     FillRect(Rect);
-    Font := FontDialog1.Font;
+    Font := dlgFont.Font;
     Font.Height := - sg.DefaultRowHeight;
     R:=Rect;
     s:=sg.Cells[Acol,ARow];
@@ -1310,584 +2090,6 @@ begin
 
 end;
 
-procedure TMainForm.tbOpenClick(Sender: TObject);
-
-begin
-  if OpenDialog.Execute then
-  begin
-    if hFont<>'' then     RemoveFontResource(PChar(hFont));
-    tbBase.Down := false;
-
-    SaveDialog1.FileName := OpenDialog.FileName;
-    hFont := '';
-
-    FNT.LoadFromFile(OpenDialog.FileName);
-
-    if FileExists(ChangeFileExt(OpenDialog.FileName,'.OTF')) then
-      hFont := ChangeFileExt(OpenDialog.FileName,'.OTF')
-    else
-    if FileExists(ChangeFileExt(OpenDialog.FileName,'.TTF')) then
-      hFont := ChangeFileExt(OpenDialog.FileName,'.TTF');
-
-    if hFont<>'' then
-      AddFontResourceEx(PChar(hFont), FR_PRIVATE ,nil);
-    SendMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0) ;
-
-    with FNT.Node['svg'].Node['defs'].Node['font'].Node['font-face'] do
-    begin
-      FontFace.font_family := Attribute['font-family'];
-      FontFace.units_per_em := Round(StrToFloatDef( Attribute['units-per-em'], 2048));
-      FontFace.ascent := Round(StrToFloatDef( Attribute['ascent'], 1536));
-      FontFace.descent := Round(StrToFloatDef( Attribute['descent'], -512));
-      FontFace.x_height := Round(StrToFloatDef( Attribute['x-height'], 768));
-      FontFace.cap_height := Round(StrToFloatDef( Attribute['cap-height'], 1024));
-    end;
-
-    ZeroXY.y :=  - FontFace.ascent ;
-    if seZoom.Value>0 then
-      ZeroXY.y := ZeroXY.y * seZoom.Value
-    else
-      ZeroXY.y := -ZeroXY.y div seZoom.Value;
-    ZeroXY.x := - 100;
-
-//    hFontName := FNT.Node['svg'].Node['defs'].Node['font'].Attribute['id'];
-    StatusBar1.Panels[0].Text:='Font: '+ FontFace.font_family;
-    FontDialog1.Font.Name := FontFace.font_family;
-    treeFNT.Indent:=abs(FontDialog1.Font.Height) div 2;
-    treeFNT.Perform( TVM_SETITEMHEIGHT,abs(FontDialog1.Font.Height) , 0);
-
-    ResetFNT;
-    Draw.Invalidate;
-    tbClearKern.Click;
-  end;
-end;
-
-
-procedure TMainForm.ToolButton10Click(Sender: TObject);
-
-begin
-  FontDialog1.Execute();
-  treeFNT.Indent:=abs(FontDialog1.Font.Height) div 2;
-  treeFNT.Perform( TVM_SETITEMHEIGHT,abs(FontDialog1.Font.Height) , 0);
-  treeFNT.Invalidate;
-
-//  sg.RowHeights[1] := abs(FontDialog1.Font.Height);
-//  sg.ColWidths[1] := abs(FontDialog1.Font.Height);
-end;
-
-procedure TMainForm.ToolButton11Click(Sender: TObject);
-var k: Double;
-  i: Integer;
-begin
-  if not tbBase.Down then exit;
-  k := Abs((BaseRect.Bottom-BaseRect.top)/(GlyphRect.Bottom-GlyphRect.Top));
-  for I := 1 to sgGlyph.RowCount-1 do
-    PathZoom(i,k);
-
-  sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
-    - BaseRect.Top + GlyphRect.Top*k );
-
-  sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0)
-    + GlyphRect.Left - GlyphRect.Left*k );
-
-  FontFace.right:= Round(
-    FontFace.right - GlyphRect.Width + GlyphRect.Width*k
-  );
-
-  Draw.invalidate;
-  ApplyGlyph;
-end;
-
-procedure TMainForm.ToolButton12Click(Sender: TObject);
-begin
-  Nod.ResetXml(seGlyph.Text);
-  seGlyph.Modified := False;
-
-end;
-
-procedure TMainForm.ToolButton13Click(Sender: TObject);
-var i:Integer;
-begin
-     seGlyph.Lines.Text := Nod.xml;
-     FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
-
-
-     ParsePath(Nod.Attribute['d']);
-     Draw.Invalidate;
-     Application.ProcessMessages;
-     for i:= 1 to sgGlyph.RowCount-1 do
-       PathRel(i);
-     seGlyph.Modified := False;
-end;
-
-procedure TMainForm.ToolButton17Click(Sender: TObject);
-begin
-  sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) - GlyphRect.Left);
-  FontFace.right:= Round(FontFace.right - GlyphRect.Left);
-  Draw.invalidate;
-  ApplyGlyph;
-end;
-
-procedure TMainForm.ToolButton18Click(Sender: TObject);
-begin
-  sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) - seGrid.Value / zm );
-  FontFace.right:= Round(FontFace.right - seGrid.Value / zm);
-  Draw.invalidate;
-  ApplyGlyph;
-
-end;
-
-procedure TMainForm.ToolButton19Click(Sender: TObject);
-begin
-  sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) + seGrid.Value / zm );
-  FontFace.right:= Round(FontFace.right + seGrid.Value / zm);
-  Draw.invalidate;
-  ApplyGlyph;
-end;
-
-procedure TMainForm.ToolButton20Click(Sender: TObject);
-begin
-  FontFace.right:= FontFace.right - Round(seGrid.Value / zm );
-  Draw.invalidate;
-  ApplyGlyph;
-end;
-
-procedure TMainForm.ToolButton21Click(Sender: TObject);
-begin
-  FontFace.right:= FontFace.right + Round(seGrid.Value / zm );
-  Draw.invalidate;
-  ApplyGlyph;
-end;
-
-procedure TMainForm.ToolButton22Click(Sender: TObject);
-begin
-  FontFace.right:= Round(GlyphRect.Right);
-  Draw.invalidate;
-  ApplyGlyph;
-end;
-
-procedure TMainForm.ToolButton24Click(Sender: TObject);
-var
-  i,j,k,l:integer;
-  Gl1:TGlyph;
-  Gl2:TGlyph;
-  nod:TXML_Nod;
-  mn,mm:double;
-  p11,p12,p21,p22,x1,y1:XYZ;
-  min_tst, min_set, max_tst, max_set, prcz:Integer;
-
-begin
-  ProgressBar1.Max := sg.RowCount;
-  ProgressBar1.Visible := True;
-
-  p11.z:=0;
-  p12.z:=0;
-  p21.z:=0;
-  p22.z:=0;
-
-
-  min_tst := StrToIntDef(seKern.Lines.Values['min.tst'], -4096);
-  min_set := StrToIntDef(seKern.Lines.Values['min.set'], 90);
-  max_tst := StrToIntDef(seKern.Lines.Values['max.tst'],4096);
-  max_set := StrToIntDef(seKern.Lines.Values['max.set'],120);
-  prcz :=StrToIntDef(seKern.Lines.Values['precision'],1);
-
-
-  ProgressBar1.Position :=1;
-  for i := 2 to sg.RowCount-1 do
-  begin
-    ProgressBar1.Position := i;
-    Application.ProcessMessages;
-    Gl1 := pointer(sg.Objects[0, i]);
-    SetLength(Gl1.rng,sg.ColCount);
-    if Gl1=nil then continue;
-    for j := 2 to sg.ColCount-1 do
-    begin
-      sg.Cells[j,i] := '';
-{
-      if    (sg.cells[0, i] = AnsiLowerCase(sg.cells[0, i]))
-        and (sg.cells[0, i] <> AnsiUpperCase(sg.cells[0, i]))
-        and (sg.cells[j, 0] <> AnsiLowerCase(sg.cells[j,0]))
-      then Continue;
- }
-      Gl2 := pointer(sg.Objects[j,0]);
-
-      mn:=4096;
-      for k := 1 to Length(Gl1.PtBuf)-1 do
-        if Gl1.TpBuf[k]<>6 then
-        begin
-          p11.x := Gl1.PtBuf[k-1].X;
-          p11.y := Gl1.PtBuf[k-1].Y;
-          p12.x := Gl1.PtBuf[k].X;
-          p12.y := Gl1.PtBuf[k].Y;
-
-          for l := 1 to Length(Gl2.PtBuf)-1 do
-          if Gl2.TpBuf[l]<>6 then
-          begin
-            p21.x := Gl2.PtBuf[l-1].X + Gl1.Right;
-            p21.y := Gl2.PtBuf[l-1].Y;
-            p22.x := Gl2.PtBuf[l].X + Gl1.Right;
-            p22.y := Gl2.PtBuf[l].Y;
-            Dist(p11,p12,p21,p22,x1,y1,mm);
-//            mm := Sqrt(sqr(x1.x-y1.x) + sqr(x1.y-y1.y) );
-
-            if mm<mn then
-            begin
-              mn := mm;
-              Gl1.rng[j-2]:=Rect(round(x1.x), round(x1.y), round(y1.x), round(y1.y));
-            end;
-          end;
-//         sg.Cells[i, j-1] := IntToStr(Round(mn))
-        end;
-      if mn < min_tst then
-        sg.Cells[j,i] := FloatToStr(Round(-(min_set - mn)/prcz)*prcz)
-      else
-      if mn > max_tst then
-        sg.Cells[j,i] := FloatToStr(Round(-(max_tst - mn)/prcz)*prcz);
-      if sg.Cells[j,i] = '0' then
-        sg.Cells[j,i] := '';
-    end;
-  end;
-  ProgressBar1.Visible := False;
-
-end;
-
-procedure TMainForm.ToolButton25Click(Sender: TObject);
-var i,j,k,l,z:integer;
-  nod:txml_nod;
-  Gl:TGlyph;
-begin
-  for i := 0 to treeFNT.SelectionCount-1 do
-  begin
-    if treeFNT.Selections[i].HasChildren then
-      for j := 0 to treeFNT.Selections[i].Count-1 do
-      begin
-         nod := treeFNT.Selections[i].Item[j].Data;
-         if nod.Attribute['d']='' then continue;
-//         if sg.Cols[0].IndexOf(nod.Attribute['glyph-name'])=-1 then
-         if sg.Cols[1].IndexOfObject(nod)=-1 then
-         begin
-           if sg.Cells[0,sg.RowCount-1]<>'' then
-             sg.RowCount := sg.RowCount+1;
-           sg.Rows[sg.RowCount-1].Clear;
-           sg.Cells[0,sg.RowCount-1] := nod.Attribute['glyph-name'];
-           sg.Cells[1,sg.RowCount-1] := THTMLEncoding.HTML.Decode(nod.Attribute['unicode']);
-           Gl:=TGlyph.Create;
-           sg.Objects[0, sg.RowCount-1] := Gl;
-           sg.Objects[1, sg.RowCount-1] := nod;
-           Gl.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
-           draw.Canvas.MoveTo(0,0);
-           ParsePath(Nod.Attribute['d']);
-
-           BeginPath(Draw.Canvas.Handle);
-           DrawPath(sgGlyph, Draw.Canvas, point(0,0), 1);
-           EndPath(Draw.Canvas.Handle);
-
-           FlattenPath(Draw.Canvas.Handle);
-           z:=GetPath(Draw.Canvas.Handle,nil,nil,0);
-           SetLength(Gl.PtBuf,z);
-           SetLength(Gl.TpBuf,z);
-           GetPath(MainForm.Draw.Canvas.Handle,@(Gl.PtBuf[0]),@(Gl.TpBuf[0]),z);
-         end;
-      end
-    else begin
-      nod := treeFNT.Selections[i].Data;
-      if nod.Attribute['d']='' then continue;
-//      if sg.Cols[0].IndexOf(nod.Attribute['glyph-name'])=-1 then
-      if sg.Cols[1].IndexOfObject(nod)=-1 then
-      begin
-        if sg.Cells[0,sg.RowCount-1]<>'' then
-          sg.RowCount := sg.RowCount+1;
-        sg.Rows[sg.RowCount-1].Clear;
-
-        sg.Cells[0,sg.RowCount-1] := nod.Attribute['glyph-name'];
-        sg.Cells[1,sg.RowCount-1] :=  THTMLEncoding.HTML.Decode(nod.Attribute['unicode']);
-
-        Gl:=TGlyph.Create;
-        sg.Objects[0, sg.RowCount-1] := Gl;
-        sg.Objects[1, sg.RowCount-1] := nod;
-        Gl.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
-        draw.Canvas.MoveTo(0,0);
-           ParsePath(Nod.Attribute['d']);
-        BeginPath(Draw.Canvas.Handle);
-        DrawPath(sgGlyph, Draw.Canvas, point(0,0), 1);
-        EndPath(Draw.Canvas.Handle);
-
-        FlattenPath(Draw.Canvas.Handle);
-        z:=GetPath(Draw.Canvas.Handle,nil,nil,0);
-        SetLength(Gl.PtBuf,z);
-        SetLength(Gl.TpBuf,z);
-        GetPath(MainForm.Draw.Canvas.Handle,@(Gl.PtBuf[0]),@(Gl.TpBuf[0]),z);
-      end;
-
-    end;
-  end;
-  if (sg.Cells[0,2]<>'') and (sg.Cells[2,0]<>'') then
-    ExistKerning;
-end;
-
-procedure TMainForm.ToolButton26Click(Sender: TObject);
-var
-  i,j,k:integer;
-  n1,nod:TXML_Nod;
-  s:string;
-  sl1:TStringList;
-  sl2:TStringList;
-begin
-
-  if MessageDlg('Apply new kernig settings?', TMsgDlgType.mtConfirmation, [mbYes,mbNo],0)<>mrYes then exit;
-
-  ProgressBar1.Position:=0;
-  ProgressBar1.Max := FNT.Node['svg'].Node['defs'].Node['font'].Nodes.Count + sg.RowCount-2;
-  ProgressBar1.Visible := True;
-  sl1:=TStringList.Create;
-  sl1.CaseSensitive:=True;
-  sl2:=TStringList.Create;
-  sl2.CaseSensitive:=True;
-
-
-  nod := FNT;
-  while nod<>nil do
-  begin
-    ProgressBar1.Position:=ProgressBar1.Position+1;
-    Application.ProcessMessages;
-    n1 := nod.next;
-    if nod.LocalName='hkern' then
-    begin
-
-      if nod.Attribute['g1']<>'' then
-      begin
-        sl1.CommaText := nod.Attribute['g1'];
-        sl2.CommaText := nod.Attribute['g2'];
-        for i := 2 to sg.RowCount-1 do
-          if sl1.IndexOf(sg.Cols[0][i])>-1 then
-          begin
-            for j := 2 to sg.ColCount-1 do
-              if sl2.IndexOf(sg.Rows[0][j])>-1 then
-              begin
-                sl2.Delete(sl2.IndexOf(sg.Rows[0][j]));
-                if sl2.count=0 then break;
-              end;
-            if sl2.count=0 then break;
-          end;
-        if sl2.count=0 then
-          nod.Free
-        else
-          nod.Attribute['g2'] := sl2.CommaText;
-      end
-      else
-
-      if nod.Attribute['u1']<>'' then
-      begin
-        sl1.Text := sg.Cols[1].Text;
-        sl2.Text := sg.Rows[1].Text;
-        if (sl1.IndexOf(THTMLEncoding.HTML.Decode(nod.Attribute['u1']))>-1) and
-           (sl2.IndexOf(THTMLEncoding.HTML.Decode(nod.Attribute['u2']))>-1)
-        then
-          nod.Free;
-      end;
-
-
-
-
-{
-      for i := 2 to sg.RowCount-1 do
-        if (THTMLEncoding.HTML.Decode(nod.Attribute['u1'])=sg.Cells[1,i]) or
-           (pos(','+sg.Cells[0,i]+',',  ','+nod.Attribute['g1']+',')>0)
-        then
-        begin
-          for j := 2 to sg.ColCount-1 do
-            if (THTMLEncoding.HTML.Decode(nod.Attribute['u2'])=sg.Cells[j,1]) then
-            begin
-               nod.Attribute['u2'] := '';
-               break;
-            end
-            else
-            if  (pos(','+sg.Cells[j,0]+',',  ','+nod.Attribute['g2']+',')>0)
-            then begin
-              s := StringReplace(',' + nod.Attribute['g2'] +',', ','+sg.Cells[j,0]+',', ',',[]);
-              if s[1]=',' then
-                delete(s,1,1);
-              if Copy(s,length(s),1) =',' then
-                delete(s,length(s),1);
-              nod.Attribute['g2'] := s;
-              break;
-            end;
-        end;
-}
-    end;
-    nod := n1;
-  end;
-  sl1.free;
-  sl2.free;
-
-  for i := 2 to sg.RowCount-1 do
-  begin
-    ProgressBar1.Position:=ProgressBar1.Position+1;
-    for j := 2 to sg.ColCount-1 do
-       if sg.Cells[j,i] <> '' then
-       begin
-         sg.Objects[j,i] := nil;
-         nod := nil;
-         for k := j-1 downto 2 do
-           if sg.Cells[j,i]=sg.Cells[k,i] then
-           begin
-             nod :=pointer(sg.Objects[k,i]);
-             break;
-           end;
-         if nod=nil then
-         begin
-            nod := FNT.Node['svg'].Node['defs'].Node['font'].Nodes.Add;
-            nod.LocalName := 'hkern';
-            nod.Attribute['g1'] :=sg.Cells[0,i];
-            nod.Attribute['k'] :=sg.Cells[j,i];
-         end;
-         if nod.Attribute['g2']<>'' then
-           nod.Attribute['g2'] := nod.Attribute['g2'] + ',';
-         nod.Attribute['g2'] := nod.Attribute['g2'] + sg.Cells[j,0];
-         sg.Objects[j,i] := Nod;
-       end;
-  end;
-
-  ProgressBar1.Visible := False;
-end;
-
-procedure TMainForm.ToolButton27Click(Sender: TObject);
-var i,j,k,l,z:integer;
-  nod:txml_nod;
-  Gl:TGlyph;
-begin
-  for i := 0 to treeFNT.SelectionCount-1 do
-  begin
-    if treeFNT.Selections[i].HasChildren then
-      for j := 0 to treeFNT.Selections[i].Count-1 do
-      begin
-         nod := treeFNT.Selections[i].Item[j].Data;
-         if nod.Attribute['d']='' then continue;
-//         if sg.Rows[0].IndexOf(nod.Attribute['glyph-name'])=-1 then
-         if sg.Rows[1].IndexOfObject(nod)=-1 then
-         begin
-           if sg.Cells[sg.ColCount-1,0]<>'' then
-             sg.ColCount := sg.ColCount+1;
-           sg.Cells[sg.ColCount-1,0] := nod.Attribute['glyph-name'];
-           sg.Cells[sg.ColCount-1,1] :=  THTMLEncoding.HTML.Decode(nod.Attribute['unicode']);
-
-           Gl:=TGlyph.Create;
-          sg.Objects[sg.ColCount-1,0] := Gl;
-          sg.Objects[sg.ColCount-1,1] := Nod;
-          Gl.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
-          draw.Canvas.MoveTo(0,0);
-           ParsePath(Nod.Attribute['d']);
-          BeginPath(Draw.Canvas.Handle);
-          DrawPath(sgGlyph, Draw.Canvas, point(0,0), 1);
-          EndPath(Draw.Canvas.Handle);
-
-          FlattenPath(Draw.Canvas.Handle);
-          z:=GetPath(Draw.Canvas.Handle,nil,nil,0);
-          SetLength(Gl.PtBuf,z);
-          SetLength(Gl.TpBuf,z);
-          GetPath(MainForm.Draw.Canvas.Handle,@(Gl.PtBuf[0]),@(Gl.TpBuf[0]),z);
-
-
-         end;
-      end
-    else begin
-      nod := treeFNT.Selections[i].Data;
-      if nod.Attribute['d']='' then continue;
-//      if sg.Rows[0].IndexOf(nod.Attribute['glyph-name'])=-1 then
-      if sg.Rows[1].IndexOfObject(nod)=-1 then
-      begin
-        if sg.Cells[sg.ColCount-1,0]<>'' then
-          sg.ColCount := sg.ColCount+1;
-        sg.Cells[sg.ColCount-1,0] := nod.Attribute['glyph-name'];
-        sg.Cells[sg.ColCount-1,1] :=  THTMLEncoding.HTML.Decode(nod.Attribute['unicode']);
-        Gl:=TGlyph.Create;
-        sg.Objects[sg.ColCount-1,0] := Gl;
-        sg.Objects[sg.ColCount-1,1] := Nod;
-        Gl.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
-        draw.Canvas.MoveTo(0,0);
-           ParsePath(Nod.Attribute['d']);
-        BeginPath(Draw.Canvas.Handle);
-        DrawPath(sgGlyph, Draw.Canvas, point(0,0), 1);
-        EndPath(Draw.Canvas.Handle);
-
-        FlattenPath(Draw.Canvas.Handle);
-        z:=GetPath(Draw.Canvas.Handle,nil,nil,0);
-        SetLength(Gl.PtBuf,z);
-        SetLength(Gl.TpBuf,z);
-        GetPath(MainForm.Draw.Canvas.Handle,@(Gl.PtBuf[0]),@(Gl.TpBuf[0]),z);
-      end;
-
-    end;
-  end;
-  if (sg.Cells[0,2]<>'') and (sg.Cells[2,0]<>'') then
-    ExistKerning;
-end;
-
-procedure TMainForm.tbClearKernClick(Sender: TObject);
-var i:Integer;
-begin
-  for I := 0 to sg.rowcount do
-    if sg.Objects[0,i]<>nil then
-      FreeAndNil(sg.Objects[0,i]);
-
-  for I := 0 to sg.colcount do
-    if sg.Objects[i,0]<>nil then
-      FreeAndNil(sg.Objects[i,0]);
-
-  sg.RowCount:=3;
-  sg.ColCount:=3;
-  sg.rows[0].text:='GLYPH';
-  sg.rows[1].text:='';
-  sg.rows[2].text:='';
-  sg.cells[1,1]:='chr';
-end;
-
-procedure TMainForm.ToolButton2Click(Sender: TObject);
-begin
-  if SaveDialog1.Execute() then
-    FNT.SaveToFile(SaveDialog1.FileName);
-end;
-
-procedure TMainForm.ToolButton4Click(Sender: TObject);
-begin
-  if not tbBase.Down then exit;
-  sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
-    - ((BaseRect.Bottom+BaseRect.top) - (GlyphRect.Bottom+GlyphRect.Top)) div 2 );
-  Draw.invalidate;
-  ApplyGlyph;
-end;
-
-procedure TMainForm.ToolButton5Click(Sender: TObject);
-begin
-  if not tbBase.Down then exit;
-  sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
-    - BaseRect.Bottom + GlyphRect.Bottom );
-  Draw.invalidate;
-  ApplyGlyph;
-end;
-
-procedure TMainForm.ToolButton6Click(Sender: TObject);
-begin
-  if not tbBase.Down then exit;
-
-  sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
-    - BaseRect.Top + GlyphRect.Top );
-  Draw.invalidate;
-  ApplyGlyph;
-end;
-
-procedure TMainForm.tbBaseClick(Sender: TObject);
-var i:integer;
-begin
-  BaseRect := GlyphRect;
-  FontFace.baseright := FontFace.right;
-  sgBase.RowCount := sgGlyph.RowCount;
-  for i:= 0 to sgGlyph.RowCount-1 do
-    sgBase.Rows[i].Assign(sgGlyph.Rows[i]);
-  Draw.Invalidate;
-end;
-
 procedure TMainForm.treeFNTAdvancedCustomDrawItem(Sender: TCustomTreeView;
   Node: TTreeNode; State: TCustomDrawState; Stage: TCustomDrawStage;
   var PaintImages, DefaultDraw: Boolean);
@@ -1902,7 +2104,7 @@ begin
     s:=copy(Node.Text[1],1,1);
 
 //    NodeRect.Left := NodeRect.Right-NodeRect.Height;
-    Sender.Canvas.Font := FontDialog1.Font;
+    Sender.Canvas.Font := dlgFont.Font;
     Sender.Canvas.Brush.Color := clInfoBk;
     Sender.Canvas.FillRect(NodeRect);
     if copy(Node.Text,2,1)=':' then
@@ -1915,19 +2117,25 @@ procedure TMainForm.treeFNTChange(Sender: TObject; Node: TTreeNode);
 var
   I: Integer;
 begin
+   FocusedNode:=Node;
    if Node.Data<>nil then
    begin
      Nod := Node.Data;
      seGlyph.Lines.Text := Nod.xml;
      FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
-
-
      ParsePath(Nod.Attribute['d']);
      Draw.OnPaint(Draw);
      Application.ProcessMessages;
      for i:= 1 to sgGlyph.RowCount-1 do
        PathRel(i);
      seGlyph.Modified := False;
+   end
+   else begin
+     Nod := nil;
+     seGlyph.Lines.Text := '';
+     seGlyph.Modified := False;
+     sgGlyph.RowCount := 1;
+     Draw.OnPaint(Draw);
    end;
 end;
 
