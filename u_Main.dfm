@@ -30,7 +30,7 @@ object MainForm: TMainForm
     Top = 0
     Width = 873
     Height = 457
-    ActivePage = tsGlyph
+    ActivePage = tsKern
     Align = alClient
     TabOrder = 0
     TabPosition = tpBottom
@@ -622,15 +622,18 @@ object MainForm: TMainForm
             'min.tst=30'
             '; set distance  by kerning to'
             'min.set=90'
-            ''
             '; When 2 glyph distance more then'
             'max.tst=180'
             '; set distance  by kerning to'
             'max.set=120'
-            ''
-            '; Round kerning to (1-10-100)'
-            'precision=10')
+            '; Limit X-overlap'
+            'overlap=-100'
+            '; Round kerning to (1-5-10-100)'
+            'precision=10'
+            '')
           WordWrap = True
+          ExplicitLeft = 2
+          ExplicitTop = 6
         end
       end
     end

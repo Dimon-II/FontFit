@@ -21,10 +21,12 @@ type
     right: integer;
     baseright: integer;
   end;
+
   TGlyph=class
     PtBuf:array of TPoint;
     TpBuf:array of Byte;
     Right:integer;
+    Bounds:TRect;
     rng:array of TRect;
   end;
 
@@ -598,6 +600,13 @@ end;
 
 procedure TMainForm.aFontSaveExecute(Sender: TObject);
 begin
+  if seGlyph.Modified then
+    if MessageDlg('Apply XML chandes before saving?', TMsgDlgType.mtConfirmation, [mbYes,mbNo],0 ) = mrYes then
+    begin
+      Nod.ResetXml(seGlyph.Text);
+      seGlyph.Modified := False;
+    end;
+
   if dlgSave.Execute() then
     FNT.SaveToFile(dlgSave.FileName);
 end;
@@ -749,7 +758,7 @@ var
   nod:TXML_Nod;
   mn,mm,dx:double;
   p11,p12,p21,p22,x1,y1:XYZ;
-  min_tst, min_set, max_tst, max_set, prcz:Integer;
+  min_tst, min_set, max_tst, max_set, prcz, overlap:Integer;
 
 begin
   pbrProcessing.Max := sg.RowCount;
@@ -775,6 +784,8 @@ begin
   max_tst := StrToIntDef(seKern.Lines.Values['max.tst'],4096);
   max_set := StrToIntDef(seKern.Lines.Values['max.set'],120);
   prcz :=StrToIntDef(seKern.Lines.Values['precision'],1);
+  overlap := StrToIntDef(seKern.Lines.Values['overlap'], -2048);
+
 
   for i := 2 to sg.ColCount-1 do
   begin
@@ -839,19 +850,28 @@ begin
           end;
 //         sg.Cells[i, j-1] := IntToStr(Round(mn))
         end;
-{
+
+      mm := 0;
       if mn < min_tst then
-        sg.Cells[j,i] := FloatToStr(Round(-(min_set - mn)/prcz)*prcz)
+        mm := mn - min_set
       else
       if mn > max_tst then
-        sg.Cells[j,i] := FloatToStr(Round(-(max_set - mn)/prcz)*prcz);
-}
+        mm := mn - max_set;
+
+      dx := Gl1.Right - Gl1.Bounds.Right + Gl2.Bounds.Left - mm;
+
+      if  dx < overlap then
+        mm := mm + dx - overlap;
+
+
+      sg.Cells[j,i] := FloatToStr(Round(mm/prcz)*prcz);
+{
       if mn < min_tst then
         sg.Cells[j,i] := FloatToStr(Round(-(min_set - dx)/prcz)*prcz)
       else
       if mn > max_tst then
         sg.Cells[j,i] := FloatToStr(Round(-(max_set - dx)/prcz)*prcz);
-
+}
 
 
       if sg.Cells[j,i] = '0' then
@@ -1951,7 +1971,7 @@ begin
 end;
 
 procedure TMainForm.RecalcGlyph(Glyph: TGlyph; Nod: TXML_Nod);
-var z:integer;
+var z :integer;
 begin
   Glyph.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
   draw.Canvas.MoveTo(0,0);
@@ -1965,6 +1985,23 @@ begin
   SetLength(Glyph.PtBuf,z);
   SetLength(Glyph.TpBuf,z);
   GetPath(MainForm.Draw.Canvas.Handle,@(Glyph.PtBuf[0]),@(Glyph.TpBuf[0]),z);
+
+  for z := 1 to Length(Glyph.PtBuf)-1 do
+    if Glyph.TpBuf[z]<>6 then
+    begin
+      Glyph.Bounds :=  Rect(Glyph.PtBuf[z].X,Glyph.PtBuf[z].Y,Glyph.PtBuf[z].X,Glyph.PtBuf[z].Y);
+      break;
+    end;
+
+  for z := 1 to Length(Glyph.PtBuf)-1 do
+    if Glyph.TpBuf[z]<>6 then
+    begin
+      Glyph.Bounds.Top := Min(Glyph.Bounds.Top, Glyph.PtBuf[z].Y);
+      Glyph.Bounds.Bottom := Max(Glyph.Bounds.Bottom, Glyph.PtBuf[z].Y);
+      Glyph.Bounds.Left := Min(Glyph.Bounds.Left, Glyph.PtBuf[z].X);
+      Glyph.Bounds.Right := Max(Glyph.Bounds.Right, Glyph.PtBuf[z].X);
+    end;
+
 end;
 
 procedure TMainForm.ResetFNT;
