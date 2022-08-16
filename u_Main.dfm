@@ -520,6 +520,7 @@ object MainForm: TMainForm
         TabOrder = 0
         OnDrawCell = sgDrawCell
         OnSelectCell = sgSelectCell
+        OnSetEditText = sgSetEditText
       end
       object tbgKerning: TToolBar
         Left = 0
@@ -632,8 +633,6 @@ object MainForm: TMainForm
             'precision=10'
             '')
           WordWrap = True
-          ExplicitLeft = 2
-          ExplicitTop = 6
         end
       end
     end
@@ -729,14 +728,6 @@ object MainForm: TMainForm
     Align = alBottom
     TabOrder = 3
     Visible = False
-  end
-  object dlgOpen: TOpenDialog
-    DefaultExt = 'svg'
-    FileName = '*.svg'
-    Filter = 'SVG font|*.svg|Any file|*.*'
-    Title = 'Open SVG font'
-    Left = 120
-    Top = 280
   end
   object dlgFont: TFontDialog
     Font.Charset = DEFAULT_CHARSET
@@ -5735,5 +5726,14 @@ object MainForm: TMainForm
       OnExecute = aMoveDownExecute
       OnUpdate = aRightEdgeUpdate
     end
+  end
+  object dlgOpenSVG: TOpenDialog
+    DefaultExt = 'SVG'
+    Filter = 'SVG font|*.svg|Any file|*.*'
+    InitialDir = '.'
+    Options = [ofHideReadOnly, ofNoChangeDir, ofNoValidate, ofFileMustExist, ofEnableSizing]
+    Title = 'Open SVG font'
+    Left = 40
+    Top = 136
   end
 end

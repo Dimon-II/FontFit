@@ -20,6 +20,7 @@ type
     cap_height: integer;
     right: integer;
     baseright: integer;
+    horiz_adv_x: integer;
   end;
 
   TGlyph=class
@@ -41,7 +42,6 @@ type
     tbFontOpen: TToolButton;
     tbFontSave: TToolButton;
     treeFNT: TTreeView;
-    dlgOpen: TOpenDialog;
     tsHeap: TTabSheet;
     lbUnicodeRegions: TListBox;
     StatusBar1: TStatusBar;
@@ -131,6 +131,7 @@ type
     aMoveDown: TAction;
     ToolButton1: TToolButton;
     ToolButton2: TToolButton;
+    dlgOpenSVG: TOpenDialog;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure treeFNTAdvancedCustomDrawItem(Sender: TCustomTreeView;
@@ -188,6 +189,8 @@ type
     procedure aKerningCalcUpdate(Sender: TObject);
     procedure aMoveUpExecute(Sender: TObject);
     procedure aMoveDownExecute(Sender: TObject);
+    procedure sgSetEditText(Sender: TObject; ACol, ARow: Integer;
+      const Value: string);
   private
     { Private declarations }
     procedure ResetFNT;
@@ -548,27 +551,27 @@ end;
 
 procedure TMainForm.aFontOpenExecute(Sender: TObject);
 begin
-  if dlgOpen.Execute then
+  if dlgOpenSVG.Execute then
   begin
     if hFont<>'' then  RemoveFontResource(PChar(hFont));
     tbSetBase.Down := false;
     Nod := nil;
 
-    dlgSave.FileName := dlgOpen.FileName;
+    dlgSave.FileName := dlgOpenSVG.FileName;
     hFont := '';
 
-    FNT.LoadFromFile(dlgOpen.FileName);
+    FNT.LoadFromFile(dlgOpenSVG.FileName);
 
-    if FileExists(ChangeFileExt(dlgOpen.FileName,'.OTF')) then
-      hFont := ChangeFileExt(dlgOpen.FileName,'.OTF')
+    if FileExists(ChangeFileExt(dlgOpenSVG.FileName,'.OTF')) then
+      hFont := ChangeFileExt(dlgOpenSVG.FileName,'.OTF')
     else
-    if FileExists(ChangeFileExt(dlgOpen.FileName,'.TTF')) then
-      hFont := ChangeFileExt(dlgOpen.FileName,'.TTF');
+    if FileExists(ChangeFileExt(dlgOpenSVG.FileName,'.TTF')) then
+      hFont := ChangeFileExt(dlgOpenSVG.FileName,'.TTF');
 
     if hFont<>'' then
       AddFontResourceEx(PChar(hFont), FR_PRIVATE ,nil);
     SendMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0) ;
-
+    FontFace.horiz_adv_x := Round(StrToFloatDef(FNT.Node['svg'].Node['defs'].Node['font'].Attribute['horiz-adv-x'], 1024));
     with FNT.Node['svg'].Node['defs'].Node['font'].Node['font-face'] do
     begin
       FontFace.font_family := Attribute['font-family'];
@@ -1113,7 +1116,8 @@ procedure TMainForm.aResetExecute(Sender: TObject);
 var i:Integer;
 begin
      seGlyph.Lines.Text := Nod.xml;
-     FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
+
+     FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], FontFace.horiz_adv_x));
 
 
      ParsePath(Nod.Attribute['d']);
@@ -1764,7 +1768,7 @@ begin
       begin
         Nod := tn.Data;
         seGlyph.Lines.Text := Nod.xml;
-        FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
+        FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], FontFace.horiz_adv_x));
         ParsePath(Nod.Attribute['d']);
         Draw.OnPaint(Draw);
         for i:= 1 to sgGlyph.RowCount-1 do
@@ -1973,7 +1977,7 @@ end;
 procedure TMainForm.RecalcGlyph(Glyph: TGlyph; Nod: TXML_Nod);
 var z :integer;
 begin
-  Glyph.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
+  Glyph.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], FontFace.horiz_adv_x));
   draw.Canvas.MoveTo(0,0);
   ParsePath(Nod.Attribute['d']);
   BeginPath(Draw.Canvas.Handle);
@@ -2116,6 +2120,12 @@ begin
  KernPaint.Invalidate;
 end;
 
+procedure TMainForm.sgSetEditText(Sender: TObject; ACol, ARow: Integer;
+  const Value: string);
+begin
+  KernPaint.Invalidate
+end;
+
 function TMainForm.StrToXY(s: string; Def: integer): double;
 begin
     Result := roundto(StrToFloatDef(s,Def),-4)
@@ -2159,7 +2169,7 @@ begin
    begin
      Nod := Node.Data;
      seGlyph.Lines.Text := Nod.xml;
-     FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], 1024));
+     FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], FontFace.horiz_adv_x));
      ParsePath(Nod.Attribute['d']);
      Draw.OnPaint(Draw);
      Application.ProcessMessages;
