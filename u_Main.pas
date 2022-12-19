@@ -8,7 +8,8 @@ uses
   Vcl.ExtDlgs, Vcl.ToolWin, profixxml,
   Vcl.Samples.Spin, Winapi.CommCtrl, SynEditHighlighter, SynHighlighterXML,
   SynEdit, Vcl.Grids, System.Math, System.ImageList, Vcl.ImgList,
-  SynHighlighterIni, System.NetEncoding, System.Actions, Vcl.ActnList;
+  SynHighlighterIni, System.NetEncoding, System.Actions, Vcl.ActnList,
+  SVG, Types, SVGTypes, SVGParse, Winapi.GDIPAPI, Winapi.GDIPOBJ;
 
 type
   TFontFace=record
@@ -132,6 +133,28 @@ type
     ToolButton1: TToolButton;
     ToolButton2: TToolButton;
     dlgOpenSVG: TOpenDialog;
+    tbFolderSVG: TToolButton;
+    pnOptions: TPanel;
+    GroupBox1: TGroupBox;
+    chbEditGlyph: TCheckBox;
+    chbEditSVG: TCheckBox;
+    GroupBox2: TGroupBox;
+    chbShowGlyph: TCheckBox;
+    chbShowSVG: TCheckBox;
+    aCenter: TAction;
+    tbCenter: TToolButton;
+    ToolButton3: TToolButton;
+    aPlusSize: TAction;
+    aMinusSize: TAction;
+    tbMinusSize: TToolButton;
+    tbPlusSize: TToolButton;
+    GroupBox3: TGroupBox;
+    chFixViewBox: TCheckBox;
+    Splitter1: TSplitter;
+    GroupBox4: TGroupBox;
+    lblInfo: TLabel;
+    aToSize: TAction;
+    tbToSize: TToolButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure treeFNTAdvancedCustomDrawItem(Sender: TCustomTreeView;
@@ -191,6 +214,19 @@ type
     procedure aMoveDownExecute(Sender: TObject);
     procedure sgSetEditText(Sender: TObject; ACol, ARow: Integer;
       const Value: string);
+    procedure tbFolderSVGClick(Sender: TObject);
+    procedure chbShowGlyphClick(Sender: TObject);
+    procedure chbShowSVGClick(Sender: TObject);
+    procedure aCenterUpdate(Sender: TObject);
+    procedure aCenterExecute(Sender: TObject);
+    procedure aPlusSizeExecute(Sender: TObject);
+    procedure aMinusSizeExecute(Sender: TObject);
+    procedure aPlusSizeUpdate(Sender: TObject);
+    procedure chFixViewBoxClick(Sender: TObject);
+    procedure ToolButton4Click(Sender: TObject);
+    procedure Memo1Change(Sender: TObject);
+    procedure aToSizeUpdate(Sender: TObject);
+    procedure aToSizeExecute(Sender: TObject);
   private
     { Private declarations }
     procedure ResetFNT;
@@ -209,7 +245,13 @@ type
     Nod:TXML_Nod;
     BrushBitmap:TBitmap;
     FocusedNode:TTreeNode;
+    SvgFolder:string;
     StopFlag:boolean;
+    ColorGlyph:TSVG;
+    GlyphMatrix:TAffineMatrix;
+    GlyphAspect:double;
+    GlyphFilename:string;
+
     function StrToXY(s:string;Def:integer):double;
     procedure DeltaPolyBezierTo(const Points: array of TPoint;ZeroXY:Tpoint);
     procedure SvgArcTo(Curr:TPoint; rx,ry:Integer; ax:double; fa, fs:boolean; x,y:integer; Canvas:TCanvas);
@@ -221,7 +263,10 @@ type
     procedure RecalcGlyph(Glyph:TGlyph; Nod:TXML_Nod);
 
     procedure ForEachSelection(AEvent:TNotifyEvent);
-
+    function SvgSize(ASVG:TSVGObject; Trans:boolean=False ):TRectF;
+    procedure ApplyViewBox(ASVG:TSVG; AGlyphMatrix:string);overload;
+    procedure ApplyViewBox(ASVG:TSVG; AGlyphMatrix:TAffineMatrix);overload;
+    procedure LoadSvgFontFit(ASVG:TSVG; AFileName:string; ANod:TXML_NOD);
   end;
 
 var
@@ -230,6 +275,9 @@ var
 implementation
 
 {$R *.dfm}
+
+uses FileCtrl;
+
 type
   TSvgPoint=record
     X,Y:Double;
@@ -443,11 +491,33 @@ End;
 
 
 procedure TMainForm.aAlignDownExecute(Sender: TObject);
+var sz:TRectF;
+  BsR:TRect;
 begin
   if Sender=nil then
   begin
-    sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
-      - BaseRect.Bottom + GlyphRect.Bottom );
+    if tbSetBase.Down then
+      BsR := BaseRect
+    else
+      BsR := GlyphRect;
+
+    if tbSetBase.Down and chbShowGlyph.Checked and chbEditGlyph.Checked then
+      sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
+        - BsR.Bottom + GlyphRect.Bottom );
+
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      sz:=SvgSize(ColorGlyph);
+      if chFixViewBox.Checked then
+      begin
+        BsR.Top := BsR.Top + round(ColorGlyph.ViewBox.Height);
+        BsR.Bottom := BsR.Bottom + round(ColorGlyph.ViewBox.Height);
+      end;
+
+      GlyphMatrix.dy := GlyphMatrix.dy - (sz.Bottom - BsR.Bottom * GlyphAspect);
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+    end;
+
     DrawPaint(Draw);
     ApplyGlyph;
   end
@@ -457,21 +527,42 @@ end;
 procedure TMainForm.aAlignHeightExecute(Sender: TObject);
 var k: Double;
   i: Integer;
+  sz:TRectF;
+  BsR:TRect;
 begin
   if Sender=nil then
   begin
-    k := Abs((BaseRect.Bottom-BaseRect.top)/(GlyphRect.Bottom-GlyphRect.Top));
-    for I := 1 to sgGlyph.RowCount-1 do
-      PathZoom(i,k);
+    if tbSetBase.Down then
+      BsR := BaseRect
+    else
+      BsR := GlyphRect;
 
-    sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
-      - BaseRect.Top + GlyphRect.Top*k );
+    if tbSetBase.Down and  chbShowGlyph.Checked and chbEditGlyph.Checked then
+    begin
+      k := Abs(BsR.Height/GlyphRect.Height);
+      for I := 1 to sgGlyph.RowCount-1 do
+        PathZoom(i,k);
 
-    sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0)
-      + GlyphRect.Left - GlyphRect.Left*k );
+      sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
+        - BaseRect.Top + GlyphRect.Top*k );
 
-    FontFace.right:= Round(
-      FontFace.right - GlyphRect.Width + GlyphRect.Width*k );
+      sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0)
+        + GlyphRect.Left - GlyphRect.Left*k );
+
+      FontFace.right:= Round(
+        FontFace.right - GlyphRect.Width + GlyphRect.Width*k );
+
+    end;
+
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      sz:=SvgSize(ColorGlyph);
+
+      GlyphMatrix.m11 := GlyphMatrix.m11 /  sz.Height * BsR.Height * GlyphAspect;
+      GlyphMatrix.m22 := GlyphMatrix.m11;
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+    end;
+    aAlignMidleExecute(Sender);
 
     DrawPaint(Draw);
     ApplyGlyph;
@@ -480,11 +571,33 @@ begin
 end;
 
 procedure TMainForm.aAlignMidleExecute(Sender: TObject);
+var sz:TRectF;
+  BsR:TRect;
 begin
   if Sender=nil then
   begin
-    sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
-      - ((BaseRect.Bottom+BaseRect.top) - (GlyphRect.Bottom+GlyphRect.Top)) div 2 );
+    if tbSetBase.Down then
+      BsR := BaseRect
+    else
+      BsR := GlyphRect;
+
+    if tbSetBase.Down and chbShowGlyph.Checked and chbEditGlyph.Checked then
+      sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
+        - (BsR.CenterPoint.Y - GlyphRect.CenterPoint.Y));
+
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      sz:=SvgSize(ColorGlyph);
+      if chFixViewBox.Checked then
+      begin
+        BsR.Top := BsR.Top + round(ColorGlyph.ViewBox.Height);
+        BsR.Bottom := BsR.Bottom + round(ColorGlyph.ViewBox.Height);
+      end;
+
+      GlyphMatrix.dy := GlyphMatrix.dy - (sz.CenterPoint.y - BsR.CenterPoint.Y * GlyphAspect);
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+    end;
+
     DrawPaint(Draw);
     ApplyGlyph;
   end
@@ -492,11 +605,35 @@ begin
 end;
 
 procedure TMainForm.aAlignTopExecute(Sender: TObject);
+var sz:TRectF;
+  dy:single;
+  BsR:TRect;
 begin
   if Sender=nil then
   begin
-    sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
-      - BaseRect.Top + GlyphRect.Top );
+    if tbSetBase.Down then
+      BsR := BaseRect
+    else
+      BsR := GlyphRect;
+
+    if tbSetBase.Down and chbShowGlyph.Checked and chbEditGlyph.Checked then
+      sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0)
+        - BsR.Top + GlyphRect.Top );
+
+
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      sz:=SvgSize(ColorGlyph);
+      if chFixViewBox.Checked then
+      begin
+        BsR.Top := BsR.Top + round(ColorGlyph.ViewBox.Height);
+        BsR.Bottom := BsR.Bottom + round(ColorGlyph.ViewBox.Height);
+      end;
+
+      GlyphMatrix.dy := GlyphMatrix.dy - (sz.top - BsR.Top * GlyphAspect);
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+    end;
+
     DrawPaint(Draw);
     ApplyGlyph;
   end
@@ -505,18 +642,53 @@ end;
 
 procedure TMainForm.aAlignTopUpdate(Sender: TObject);
 begin
-  TAction(Sender).Enabled := tbSetBase.Down and (treeFNT.SelectionCount>0);
+  TAction(Sender).Enabled := (treeFNT.SelectionCount>0)
+    and ((chbShowGlyph.Checked and chbEditGlyph.Checked and tbSetBase.Down)
+       or (chbShowSVG.Checked and chbEditSVG.Checked and (FocusedNode.HasChildren or (ColorGlyph <> nil)) ));
 end;
 
 procedure TMainForm.aApplyExecute(Sender: TObject);
 begin
   Nod.ResetXml(seGlyph.Text);
+  if ColorGlyph <> nil then
+  begin
+    Nod.Attribute['ColorSVG'] := Format('matrix(%.5f 0 0 %.5f %.3f %.3f)',
+      [GlyphMatrix.m11, GlyphMatrix.m11, GlyphMatrix.dx,GlyphMatrix.dy]);
+  end;
   seGlyph.Modified := False;
 end;
 
 procedure TMainForm.aApplyUpdate(Sender: TObject);
 begin
   TAction(Sender).Enabled := (Nod <> nil) and (seGlyph.Modified);
+end;
+
+procedure TMainForm.aCenterExecute(Sender: TObject);
+var sz:TRectF;
+begin
+  if Sender=nil then
+  begin
+
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      sz:=SvgSize(ColorGlyph);
+      GlyphMatrix.dx := GlyphMatrix.dx - (sz.CenterPoint.x - GlyphRect.CenterPoint.x * GlyphAspect)  ;
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+    end;
+
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aCenterExecute)
+end;
+
+procedure TMainForm.aCenterUpdate(Sender: TObject);
+begin
+TAction(Sender).Enabled := (treeFNT.SelectionCount>0)
+                       and chbShowGlyph.Checked
+                       and chbShowSVG.Checked
+                       and chbEditSVG.Checked
+                       and (FocusedNode.HasChildren or(ColorGlyph <> nil));
 end;
 
 procedure TMainForm.aEdgeLeftExecute(Sender: TObject);
@@ -555,10 +727,16 @@ begin
   begin
     if hFont<>'' then  RemoveFontResource(PChar(hFont));
     tbSetBase.Down := false;
+    if aReset.Enabled then
+      aReset.Execute;
+
     Nod := nil;
 
     dlgSave.FileName := dlgOpenSVG.FileName;
     hFont := '';
+    if SvgFolder='' then
+      SvgFolder := ExtractFilePath(dlgOpenSVG.FileName);
+
 
     FNT.LoadFromFile(dlgOpenSVG.FileName);
 
@@ -582,6 +760,16 @@ begin
       FontFace.cap_height := Round(StrToFloatDef( Attribute['cap-height'], 1024));
     end;
 
+    if FNT.Node['svg'].Node['metadata']=nil then
+      FNT.Node['svg'].Add('metadata');
+    if FNT.Node['svg'].Node['metadata'].Attribute['folder']<>'' then
+    begin
+      SvgFolder := ExtractFilePath(dlgOpenSVG.FileName) +'\' + FNT.Node['svg'].Node['metadata'].Attribute['folder']
+    end;
+
+
+
+
     ZeroXY.y :=  - FontFace.ascent ;
     if seZoom.Value>0 then
       ZeroXY.y := ZeroXY.y * seZoom.Value
@@ -602,16 +790,70 @@ begin
 end;
 
 procedure TMainForm.aFontSaveExecute(Sender: TObject);
+var
+  nod,n1:TXML_Nod;
+  s,n:string;
+  TempSvg:TXML_Doc;
+
+
 begin
   if seGlyph.Modified then
-    if MessageDlg('Apply XML chandes before saving?', TMsgDlgType.mtConfirmation, [mbYes,mbNo],0 ) = mrYes then
-    begin
-      Nod.ResetXml(seGlyph.Text);
-      seGlyph.Modified := False;
+    case MessageDlg('Apply XML chandes before saving?', TMsgDlgType.mtConfirmation, [mbYes,mbNo,mbAbort],0 ) of
+      mrYes: aApply.Execute;
+//    mrNo:     aReset.Execute;
+      mrAbort:exit;
     end;
 
+
   if dlgSave.Execute() then
+  begin
     FNT.SaveToFile(dlgSave.FileName);
+    nod := FNT;
+    repeat
+      if nod.Attribute['ColorSVG']<>'' then
+      begin
+        s := THTMLEncoding.HTML.Decode(nod.Attribute['unicode'])+#0;
+        s := SvgFolder + '\U+'+IntToHex(Ord(s[1]),4) +'.svg';
+
+        if FileExists(s)then
+        try
+          TempSvg:=TXML_Doc.Create;
+
+          TempSvg.LoadFromFile(s);
+          if not FileExists(ChangeFileExt(s,'.bak')) then
+            RenameFile(s,ChangeFileExt(s,'.bak'));
+          n1 := TempSvg;
+          repeat
+            if (n1.LocalName='svg') or (n1.LocalName='svg:svg') then
+            begin
+              if n1.Attributes.ByName('transform')<>nil then
+                n1.Attributes.ByName('transform').Free;
+              if n1.Nodes.ByID('FontFit')=nil then
+              begin
+                n := n1.Nodes.xml;
+                n1.Nodes.Clear;
+                n1 := n1.Add('g');
+                n1.Attribute['id'] := 'FontFit';
+                n1.Nodes.xml := n;
+                n1.Attribute['transform']:= nod.Attribute['ColorSVG'];
+              end
+              else
+                n1.Nodes.ByID('FontFit').Attribute['transform']:= nod.Attribute['ColorSVG'];
+              nod.Attributes.ByName('ColorSVG').free;
+              break;
+            end;
+
+            n1:=n1.Next;
+          until n1=nil;
+
+          TempSvg.SaveToFile(s);
+        finally
+          FreeAndNil(TempSvg);
+        end;
+      end;
+      nod := nod.Next;
+    until  nod = nil;
+  end;
 end;
 
 procedure TMainForm.aFontSaveUpdate(Sender: TObject);
@@ -1019,22 +1261,76 @@ begin
 end;
 
 procedure TMainForm.aLeftEdgeExecute(Sender: TObject);
+var sz:TRectF;
 begin
   if Sender=nil then
   begin
-    sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) - GlyphRect.Left);
-    FontFace.right:= Round(FontFace.right - GlyphRect.Left);
+    if chbShowGlyph.Checked and chbEditGlyph.Checked then
+    begin
+      sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) - GlyphRect.Left);
+      FontFace.right:= Round(FontFace.right - GlyphRect.Left);
+    end;
+
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      sz:=SvgSize(ColorGlyph);
+      GlyphMatrix.dx := GlyphMatrix.dx - (sz.Left) {/ GlyphAspect};
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+    end;
+
     DrawPaint(Draw);
     ApplyGlyph;
   end
   else ForEachSelection(aLeftEdgeExecute)
 end;
 
+procedure TMainForm.aMinusSizeExecute(Sender: TObject);
+var k: Double;
+  i: Integer;
+var sz:TRectF;
+begin
+  if Sender=nil then
+  begin
+    if chbShowGlyph.Checked and chbEditGlyph.Checked then
+    begin
+      k := (GlyphRect.Height - seGrid.Value / zm ) / GlyphRect.Height;
+      for I := 1 to sgGlyph.RowCount-1 do
+        PathZoom(i,k);
+    end;
+
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      sz:=SvgSize(ColorGlyph);
+
+      GlyphMatrix.m11 := GlyphMatrix.m11 *  (sz.Height - seGrid.Value / zm * GlyphAspect ) / sz.Height;
+      GlyphMatrix.m22 := GlyphMatrix.m11;
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+
+      aAlignMidleExecute(Sender);
+    end;
+
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aMinusSizeExecute)
+
+end;
+
 procedure TMainForm.aMoveDownExecute(Sender: TObject);
 begin
   if Sender=nil then
   begin
-    sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0) - seGrid.Value / zm );
+
+    if chbShowGlyph.Checked and chbEditGlyph.Checked then
+      sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0) - seGrid.Value / zm );
+
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      GlyphMatrix.dy := GlyphMatrix.dy + (seGrid.Value / zm) * GlyphAspect;
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+    end;
+
+
     DrawPaint(Draw);
     ApplyGlyph;
   end
@@ -1045,8 +1341,18 @@ procedure TMainForm.aMoveLeftExecute(Sender: TObject);
 begin
   if Sender=nil then
   begin
-    sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) - seGrid.Value / zm );
-    FontFace.right:= Round(FontFace.right - seGrid.Value / zm);
+    if chbShowGlyph.Checked and chbEditGlyph.Checked then
+    begin
+      sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) - seGrid.Value / zm );
+      FontFace.right:= Round(FontFace.right - seGrid.Value / zm);
+    end;
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      GlyphMatrix.dx := GlyphMatrix.dx - (seGrid.Value / zm) * GlyphAspect;
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+    end;
+
+
     DrawPaint(Draw);
     ApplyGlyph;
   end
@@ -1058,8 +1364,17 @@ begin
 
   if Sender=nil then
   begin
-    sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) + seGrid.Value / zm );
-    FontFace.right:= Round(FontFace.right + seGrid.Value / zm);
+    if chbShowGlyph.Checked and chbEditGlyph.Checked then
+    begin
+      sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) + seGrid.Value / zm );
+      FontFace.right:= Round(FontFace.right + seGrid.Value / zm);
+    end;
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      GlyphMatrix.dx := GlyphMatrix.dx + (seGrid.Value / zm) * GlyphAspect;
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+    end;
+
     DrawPaint(Draw);
     ApplyGlyph;
   end
@@ -1070,11 +1385,62 @@ procedure TMainForm.aMoveUpExecute(Sender: TObject);
 begin
   if Sender=nil then
   begin
-    sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0) + seGrid.Value / zm );
+    if chbShowGlyph.Checked and chbEditGlyph.Checked then
+      sgGlyph.Cells[3,1] := FloatToStr(StrToXY(sgGlyph.Cells[3,1],0) + seGrid.Value / zm );
+
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      GlyphMatrix.dy := GlyphMatrix.dy - (seGrid.Value / zm) * GlyphAspect;
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+    end;
+
+
     DrawPaint(Draw);
     ApplyGlyph;
   end
   else ForEachSelection(aMoveUpExecute)
+end;
+
+procedure TMainForm.aPlusSizeExecute(Sender: TObject);
+var k: Double;
+  i: Integer;
+var sz:TRectF;
+begin
+  if Sender=nil then
+  begin
+    if chbShowGlyph.Checked and chbEditGlyph.Checked then
+    begin
+      k := (GlyphRect.Height + seGrid.Value / zm ) / GlyphRect.Height;
+      for I := 1 to sgGlyph.RowCount-1 do
+        PathZoom(i,k);
+
+    end;
+
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      sz:=SvgSize(ColorGlyph);
+
+
+      GlyphMatrix.m11 := GlyphMatrix.m11 *  (sz.Height + seGrid.Value / zm * GlyphAspect) / sz.Height;
+      GlyphMatrix.m22 := GlyphMatrix.m11;
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+
+      aAlignMidleExecute(Sender);
+    end;
+
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aPlusSizeExecute)
+
+end;
+
+procedure TMainForm.aPlusSizeUpdate(Sender: TObject);
+begin
+  TAction(Sender).Enabled := (treeFNT.SelectionCount>0)
+     and ((chbShowGlyph.Checked and chbEditGlyph.Checked)
+       or (chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph <> nil) ));
+
 end;
 
 procedure TMainForm.ApplyGlyph;
@@ -1112,13 +1478,31 @@ begin
   seGlyph.Modified := True;
 end;
 
+procedure TMainForm.ApplyViewBox(ASVG: TSVG; AGlyphMatrix: TAffineMatrix);
+begin
+  ApplyViewBox(ASVG, Format('matrix(%.5f 0 0 %.5f %.3f %.3f)',
+            [AGlyphMatrix.m11, AGlyphMatrix.m11, AGlyphMatrix.dx, AGlyphMatrix.dy]))
+end;
+
+procedure TMainForm.ApplyViewBox(ASVG: TSVG; AGlyphMatrix: string);
+begin
+  GlyphMatrix :=ParseTransform(AGlyphMatrix);
+
+  ASVG.FindByID('FontFit').ReadInAttr(saTransform, AGlyphMatrix)
+End;
+
 procedure TMainForm.aResetExecute(Sender: TObject);
 var i:Integer;
 begin
-     seGlyph.Lines.Text := Nod.xml;
+     if Nod <> nil then
+       seGlyph.Lines.Text := Nod.xml;
 
      FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], FontFace.horiz_adv_x));
-
+     if ColorGlyph <> nil then
+     begin
+       LoadSvgFontFit(ColorGlyph,GlyphFilename, Nod);
+       ApplyViewBox(ColorGlyph, GlyphMatrix);
+     end;
 
      ParsePath(Nod.Attribute['d']);
      DrawPaint(Draw);
@@ -1134,10 +1518,19 @@ begin
 end;
 
 procedure TMainForm.aRightEdgeExecute(Sender: TObject);
+var sz:TRectF;
 begin
   if Sender=nil then
   begin
-    FontFace.right:= Round(GlyphRect.Right);
+    if chbShowGlyph.Checked then
+      FontFace.right:= Round(GlyphRect.Right)
+    else
+    if chbShowSVG.Checked  and (ColorGlyph <> nil) then
+    begin
+      sz:=SvgSize(ColorGlyph);
+      FontFace.right:= Round(sz.Right)
+    end;
+
     DrawPaint(Draw);
     ApplyGlyph;
   end
@@ -1168,6 +1561,54 @@ end;
 procedure TMainForm.aStopCalcExecute(Sender: TObject);
 begin
   StopFlag:= True;
+end;
+
+procedure TMainForm.aToSizeExecute(Sender: TObject);
+var sz:TRectF;
+begin
+  if Sender=nil then
+  begin
+
+    if chbShowGlyph.Checked and chbEditGlyph.Checked then
+    begin
+      sgGlyph.Cells[2,1] := FloatToStr(StrToXY(sgGlyph.Cells[2,1],0) + FontFace.right / 2 - GlyphRect.CenterPoint.X);
+    end;
+
+    if chbShowSVG.Checked and chbEditSVG.Checked and (ColorGlyph<>nil) then
+    begin
+      sz:=SvgSize(ColorGlyph);
+      GlyphMatrix.dx := GlyphMatrix.dx - (sz.CenterPoint.x - FontFace.right / 2 * GlyphAspect)  ;
+      ApplyViewBox(ColorGlyph, GlyphMatrix);
+    end;
+
+    DrawPaint(Draw);
+    ApplyGlyph;
+  end
+  else ForEachSelection(aToSizeExecute)
+
+end;
+
+procedure TMainForm.aToSizeUpdate(Sender: TObject);
+begin
+  TAction(Sender).Enabled := (treeFNT.SelectionCount>0)
+    and ((chbShowGlyph.Checked and chbEditGlyph.Checked)
+       or (chbShowSVG.Checked and chbEditSVG.Checked));
+end;
+
+procedure TMainForm.chbShowGlyphClick(Sender: TObject);
+begin
+  DrawPaint(Draw);
+end;
+
+procedure TMainForm.chbShowSVGClick(Sender: TObject);
+begin
+  DrawPaint(Draw);
+end;
+
+procedure TMainForm.chFixViewBoxClick(Sender: TObject);
+begin
+  DrawPaint(Draw);
+
 end;
 
 procedure TMainForm.DeltaPolyBezierTo(const Points: array of TPoint; ZeroXY:Tpoint);
@@ -1253,45 +1694,53 @@ var
   k: TCanvas;
   PtBuf:array of TPoint;
   TpBuf:array of Byte;
+  KView:double;
+  bn:TRectF;
+  Fix:single;
+  GlyphInfo:string;
 begin
   mx:=point(0,0);
   MinXY:=point(0,0);
+  GlyphInfo:='';
 
   with Draw.Canvas do
   begin
+    BrushBitmap.Width :=seGrid.Value;
+    BrushBitmap.Height :=seGrid.Value;
+    BrushBitmap.Canvas.Brush.Color := clWhite;
+    BrushBitmap.Canvas.Pen.color := clWhite;
+    BrushBitmap.Canvas.Brush.Style := bsSolid;
+    BrushBitmap.Canvas.Rectangle(0,0,seGrid.Value, seGrid.Value);
+    p0.x := -ZeroXY.x mod seGrid.Value;
+    p0.y := -ZeroXY.y mod seGrid.Value;
+    p0.x:= (8 + 2*seGrid.Value + abs(ZeroXY.x)) mod seGrid.Value;
+    p0.y:= (8 + 2*seGrid.Value + abs(ZeroXY.y)) mod seGrid.Value;
+
+    if seGrid.Value > 9 then
+      BrushBitmap.Canvas.Pixels[p0.x,p0.y]:=$A0A000;
+
+    if seGrid.Value > 19 then
     begin
-      BrushBitmap.Width :=seGrid.Value;
-      BrushBitmap.Height :=seGrid.Value;
-      BrushBitmap.Canvas.Brush.Color := clWhite;
-      BrushBitmap.Canvas.Pen.color := clWhite;
-      BrushBitmap.Canvas.Brush.Style := bsSolid;
-      BrushBitmap.Canvas.Rectangle(0,0,seGrid.Value, seGrid.Value);
-      p0.x := -ZeroXY.x mod seGrid.Value;
-      p0.y := -ZeroXY.y mod seGrid.Value;
-
-      p0.x:= (8 + 2*seGrid.Value + abs(ZeroXY.x)) mod seGrid.Value;
-      p0.y:= (8 + 2*seGrid.Value + abs(ZeroXY.y)) mod seGrid.Value;
-
-      if seGrid.Value > 9 then
-        BrushBitmap.Canvas.Pixels[p0.x,p0.y]:=$A0A000;
-
-      if seGrid.Value > 19 then
-      begin
-        BrushBitmap.Canvas.pen.Color := $FFFFC0;
-        BrushBitmap.Canvas.MoveTo(0, p0.y);
-        BrushBitmap.Canvas.LineTo(seGrid.Value, p0.y);
-        BrushBitmap.Canvas.MoveTo(p0.x, 0);
-        BrushBitmap.Canvas.LineTo(p0.X,seGrid.Value);
-      end;
-
-      Pen.Style := psClear;
-      Brush.Bitmap:=BrushBitmap;
-      Rectangle(0,0, Mainform.Draw.Width, Mainform.Draw.Height);
-      Brush.Bitmap:=nil;
-
-
-
+      BrushBitmap.Canvas.pen.Color := $FFFFC0;
+      BrushBitmap.Canvas.MoveTo(0, p0.y);
+      BrushBitmap.Canvas.LineTo(seGrid.Value, p0.y);
+      BrushBitmap.Canvas.MoveTo(p0.x, 0);
+      BrushBitmap.Canvas.LineTo(p0.X,seGrid.Value);
     end;
+
+    Pen.Style := psClear;
+    Brush.Bitmap:=BrushBitmap;
+    Rectangle(0,0, Mainform.Draw.Width, Mainform.Draw.Height);
+    Brush.Bitmap:=nil;
+
+
+    if seZoom.Value=0 then
+      zm := 1
+    else
+    if seZoom.Value>0 then
+      zm := seZoom.Value
+    else
+      zm := -1 / seZoom.Value;
 
     Pen.Color := $F0;
     Pen.Style := psDash;
@@ -1320,13 +1769,6 @@ begin
     MoveTo(0, -ZeroXY.y - round(zm * FontFace.ascent));
     LineTo(self.Draw.width, -ZeroXY.y - round(zm * FontFace.ascent));
 
-    if seZoom.Value=0 then
-      zm := 1
-    else
-    if seZoom.Value>0 then
-      zm := seZoom.Value
-    else
-      zm := -1 / seZoom.Value;
 
     MoveTo(-ZeroXY.x,-ZeroXY.y);
     Pen.Style := psSolid;
@@ -1335,14 +1777,40 @@ begin
 
     if tbSetBase.Down then
     begin
-
       DrawPath(sgBase, MainForm.Draw.Canvas,Point(ZeroXY.X + round(FontFace.baseright *zm) ,ZeroXY.Y), zm);
       DrawPath(sgBase, MainForm.Draw.Canvas,Point(ZeroXY.X - round(FontFace.right *zm),ZeroXY.Y), zm);
     end;
 
+    if (ColorGlyph<>nil) and chbShowSVG.Checked then
+    begin
+      if chFixViewBox.Checked then
+         Fix := ColorGlyph.ViewBox.Height
+       else
+         Fix := 0;
+
+       ColorGlyph.LocalMatrix := ColorGlyph.LocalMatrix.Create(zm, 0, 0, zm,
+       ColorGlyph.ViewBox.Left - ColorGlyph.ViewBox.Left*zm,
+       ColorGlyph.ViewBox.top - ColorGlyph.ViewBox.top*zm - fix*zm);
+
+    //   ColorGlyph.CalculateMatrices;
+
+       ColorGlyph.PaintTo(MainForm.Draw.Canvas.Handle, -ZeroXY.x, -ZeroXY.y, FontFace.units_per_em, FontFace.units_per_em);
+       bn :=SvgSize(ColorGlyph);
+       GlyphInfo := ^M^M'SVG:'^M;
+       if ColorGlyph.ViewBox.Width<>0 then
+         GlyphInfo := GlyphInfo + Format('viewBox="%.0f %.0f %.0f %.0f"',
+           [ColorGlyph.ViewBox.Left, ColorGlyph.ViewBox.Top, ColorGlyph.ViewBox.Width, ColorGlyph.ViewBox.Height])
+       else
+         GlyphInfo := GlyphInfo + 'viewBox empty';
+       GlyphInfo := GlyphInfo + Format(^M'bounds="%.0f %.0f %.0f %.0f"'^M'File: %s',
+         [bn.Left, bn.Top, bn.Width, bn.Height, ExtractFileName(GlyphFilename)]);
+    end;
+
     MoveTo(-ZeroXY.x,-ZeroXY.y);
     Pen.Width := 2; Pen.Color := $000000;
-    DrawPath(sgGlyph, MainForm.Draw.Canvas,ZeroXY, zm);
+
+    if chbShowGlyph.Checked then
+      DrawPath(sgGlyph, MainForm.Draw.Canvas,ZeroXY, zm);
 
     MoveTo(0,0);
     BeginPath(MainForm.Draw.Canvas.Handle);
@@ -1376,31 +1844,15 @@ begin
           GlyphRect.Top := PtBuf[I].y;
         if GlyphRect.Bottom < PtBuf[I].y then
           GlyphRect.Bottom := PtBuf[I].y;
-
-{
-      if TpBuf[i]=2 then
-        MainForm.Draw.Canvas.LineTo(PtBuf[I].x, PtBuf[i].Y)
-      else
-        MainForm.Draw.Canvas.MoveTo(PtBuf[I].x, PtBuf[i].Y);
-
-      MainForm.Draw.Canvas.MoveTo(PtBuf[I].x-10, PtBuf[i].Y);
-      MainForm.Draw.Canvas.LineTo(PtBuf[I].x+10, PtBuf[i].Y);
-      MainForm.Draw.Canvas.MoveTo(PtBuf[I].x, PtBuf[i].Y-10);
-      MainForm.Draw.Canvas.LineTo(PtBuf[I].x, PtBuf[i].Y+10);
-      MainForm.Draw.Canvas.MoveTo(PtBuf[I].x, PtBuf[i].Y);
-}
       end;
-{
-    Brush.Style := bsDiagCross;
-    Brush.Color := $F0;
-   Rectangle(
-     -ZeroXY.x + Round(zm * GlyphRect.Left),
-     -ZeroXY.y + Round(zm * GlyphRect.Top),
-     -ZeroXY.x + Round(zm * GlyphRect.Right),
-     -ZeroXY.y + Round(zm * GlyphRect.Bottom)
-     );
-}
   end;
+  if tbSetBase.Down then
+     GlyphInfo := GlyphInfo + Format(^M^M'Base="%d %d %d %d"'^M,
+       [BaseRect.Left, BaseRect.Top, BaseRect.Width, BaseRect.Height]);
+
+  lblInfo.Caption :=Format('EM: %d'^M'GLYPH: width=%d (%d)'^M'bounds="%d %d %d %d"',
+           [FontFace.units_per_em, FontFace.right, FontFace.right-GlyphRect.Right, GlyphRect.Left, GlyphRect.Top, GlyphRect.Width, GlyphRect.Height])+
+    GlyphInfo;
 end;
 
 procedure TMainForm.DrawPath(sgDots:TStringGrid;ACanvas:TCanvas;ZeroXY:TPoint;ZM:double);
@@ -1756,6 +2208,8 @@ end;
 procedure TMainForm.ForEachSelection(AEvent: TNotifyEvent);
 var tn: TTreeNode;
   i: integer;
+  s: string;
+  n:array[0..3]of single;
 begin
   if (treeFNT.SelectionCount>1) or (treeFNT.Selected.HasChildren)
   then
@@ -1768,6 +2222,19 @@ begin
       begin
         Nod := tn.Data;
         seGlyph.Lines.Text := Nod.xml;
+
+        s := THTMLEncoding.HTML.Decode(nod.Attribute['unicode'])+#0;
+        i := Ord(s[1]);
+        s := SvgFolder + '\U+'+IntToHex(i,4) +'.svg';
+        if ColorGlyph <> nil then
+          FreeAndNil(ColorGlyph);
+
+        if FileExists(s)then
+        begin
+          ColorGlyph := TSvg.Create;
+          LoadSvgFontFit(ColorGlyph, s, Nod);
+        end;
+
         FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], FontFace.horiz_adv_x));
         ParsePath(Nod.Attribute['d']);
         Draw.OnPaint(Draw);
@@ -1776,8 +2243,11 @@ begin
         seGlyph.Modified := False;
 
         AEvent(nil);
-
         Nod.ResetXml(seGlyph.Text);
+        if ColorGlyph <> nil then
+          Nod.Attribute['ColorSVG'] := Format('matrix(%.5f 0 0 %.5f %.3f %.3f)',
+            [GlyphMatrix.m11, GlyphMatrix.m11, GlyphMatrix.dx,GlyphMatrix.dy]);
+
         seGlyph.Modified := False;
       end;
       tn := tn.GetNext;
@@ -1815,6 +2285,8 @@ begin
   tbClearKern.Click;
 
 //  pnImg.SetBounds(0,0,2048,2048)
+
+
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
@@ -1872,6 +2344,72 @@ begin
          round(Gl1.rng[sg.col-2].Bottom/12 + FontFace.ascent/12)+20);
   end;
 
+end;
+
+procedure TMainForm.LoadSvgFontFit(ASVG: TSVG; AFileName: string; ANod:TXML_NOD);
+var temp:TXml_Doc;
+  n1:TXML_Nod;
+  n:string;
+begin
+  try
+    temp:=TXml_Doc.Create;
+    temp.LoadFromFile(AFileName);
+    n1 := temp;
+    repeat
+      if (n1.LocalName='svg') or (n1.LocalName='svg:svg') then
+      begin
+        if n1.Attributes.ByName('transform')<> nil then
+          n1.Attributes.ByName('transform').Free;
+        if n1.Nodes.ByID('FontFit')=nil then
+         begin
+           n := n1.Nodes.xml;
+           n1.Nodes.Clear;
+           n1 := n1.Add('g');
+           n1.Attribute['id'] := 'FontFit';
+           n1.Nodes.xml := n;
+           n1.Attribute['transform']:= 'matrix(1 0 0 1 0 0)'
+         end;
+         break;
+       end;
+      n1:=n1.Next;
+    until n1=nil;
+
+    ASVG.LoadFromText(temp.xml);
+
+    if Nod.Attribute['ColorSVG']<>'' then
+      ApplyViewBox(ColorGlyph,Nod.Attribute['ColorSVG'])
+    else begin
+      GlyphMatrix.Create(1,0,0,1,0,0);
+      if ColorGlyph.FindByID('FontFit') <> nil then
+        if TSVGMatrix(ColorGlyph.FindByID('FontFit')).LocalMatrix.m11<>0 then
+          GlyphMatrix := TSVGMatrix(ColorGlyph.FindByID('FontFit')).LocalMatrix
+      else
+
+      if (ASVG.ViewBox.Left <> 0) or (ASVG.ViewBox.Top <> 0) then
+      begin
+        GlyphMatrix.dx := GlyphMatrix.dx - ASVG.ViewBox.Left;
+        GlyphMatrix.dy := GlyphMatrix.dy - ASVG.ViewBox.top;
+        ApplyViewBox(ASVG, GlyphMatrix);
+      end;
+
+    end;
+    ASVG.ViewBox.Offset(-ASVG.ViewBox.Left, -ASVG.ViewBox.Top);
+
+    GlyphFilename := Afilename;
+    if (ASVG.ViewBox.Width = 0)or(FontFace.units_per_em=0) then
+      GlyphAspect := 1
+    else
+      GlyphAspect := Max(ASVG.ViewBox.Width,ASVG.ViewBox.Height)
+         / FontFace.units_per_em ;
+
+  finally
+    FreeAndNil(temp)
+  end;
+end;
+
+procedure TMainForm.Memo1Change(Sender: TObject);
+begin
+    DrawPaint(Draw);
 end;
 
 procedure TMainForm.ParsePath(APath: string);
@@ -2137,6 +2675,24 @@ begin
 
 end;
 
+procedure TMainForm.tbFolderSVGClick(Sender: TObject);
+begin
+  if SelectDirectory('SVG Glyphs folder', ExtractFilePath(dlgOpenSVG.FileName) ,SvgFolder, [sdNewUI, sdShowEdit]) then
+  begin
+    if FocusedNode<>nil then
+        treeFNTChange(treeFNT, FocusedNode);
+    if treeFNT.Items.Count > 0 then
+      FNT.Node['svg'].Node['metadata'].Attribute['folder'] :=
+          ExtractRelativePath(ExtractFilePath(dlgOpenSVG.FileName),SvgFolder);
+
+  end;
+end;
+
+procedure TMainForm.ToolButton4Click(Sender: TObject);
+begin
+ seGlyph.Lines.text := ColorGlyph.Source
+end;
+
 procedure TMainForm.treeFNTAdvancedCustomDrawItem(Sender: TCustomTreeView;
   Node: TTreeNode; State: TCustomDrawState; Stage: TCustomDrawStage;
   var PaintImages, DefaultDraw: Boolean);
@@ -2163,11 +2719,30 @@ end;
 procedure TMainForm.treeFNTChange(Sender: TObject; Node: TTreeNode);
 var
   I: Integer;
+  s: string;
+//  bn:TRectF;
+  z:single;
+  n:array[0..3] of single;
 begin
    FocusedNode:=Node;
    if Node.Data<>nil then
    begin
      Nod := Node.Data;
+     s := THTMLEncoding.HTML.Decode(nod.Attribute['unicode'])+#0;
+     i := Ord(s[1]);
+     s := SvgFolder + '\U+'+IntToHex(i,4) +'.svg';
+
+     if ColorGlyph <> nil then
+       FreeAndNil(ColorGlyph);
+
+     if FileExists(s)then
+     begin
+        ColorGlyph := TSvg.Create;
+
+        LoadSvgFontFit(ColorGlyph, s, Nod);
+
+      end;
+
      seGlyph.Lines.Text := Nod.xml;
      FontFace.right := Round(strtofloatdef(Nod.Attribute['horiz-adv-x'], FontFace.horiz_adv_x));
      ParsePath(Nod.Attribute['d']);
@@ -2176,12 +2751,16 @@ begin
      for i:= 1 to sgGlyph.RowCount-1 do
        PathRel(i);
      seGlyph.Modified := False;
+
    end
    else begin
      Nod := nil;
      seGlyph.Lines.Text := '';
      seGlyph.Modified := False;
      sgGlyph.RowCount := 1;
+     if ColorGlyph <> nil then
+       FreeAndNil(ColorGlyph);
+
      Draw.OnPaint(Draw);
    end;
 end;
@@ -2273,6 +2852,33 @@ begin
 
 end;
 
+  function TMainForm.SvgSize(ASVG:TSVGObject; Trans:boolean=False):TRectF;
+  var
+    i:integer;
+    rf:TRectF;
+    gpt: TGPGraphicsPath;
+    bnd: TGpRectF;
+  begin
+    gpt := TGPGraphicsPath.Create;
+    ColorGlyph.LocalMatrix  := ColorGlyph.InitialMatrix.Create(1, 0, 0, 1, 0, 0);
+    ColorGlyph.CalculateMatrices;
+    ColorGlyph.PaintToPath(gpt);
+    gpt.Flatten;
+    gpt.GetBounds(bnd);
+    gpt.Free;
+    bnd.X := bnd.X - ColorGlyph.ViewBox.Left;
+    bnd.Y := bnd.Y - ColorGlyph.ViewBox.Top;
+
+    {
+    if chFixViewBox.Checked then
+      bnd.Y := bnd.Y - ColorGlyph.ViewBox.Height;
+    }
+
+    Result.Create(bnd.X, bnd.Y, bnd.X+bnd.Width, bnd.Y + bnd.Height)
+
+  end;
+
 
 
 end.
+

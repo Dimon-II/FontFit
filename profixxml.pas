@@ -383,8 +383,10 @@ End;
 function TXML_Nod.GetItems(Index: string): TXML_Nod;
 Begin
   result:=Nodes.ByName(Index);
+{
   if result=nil then
     Raise exception.Create('Node '+trim(self.Fname+' '+Index)+' not exists');
+}
 End;
 
 
@@ -632,14 +634,14 @@ begin
         p2:=Q_posstr('?>',s,p1);
         xData:=copy(s,p1+2,p2-p1-2);
         oList.Append('SY:'+xData);
-        p1:=p2+2;
+        p1:=p2+1;
       end
       else
       if uppercase(copy(s,p1,2))='<!' then begin
         p2:=Q_posstr('>',s,p1);
         xData:=copy(s,p1+2,p2-p1-2);
         oList.Append('RM:'+xData);
-        p1:=p2+2;
+        p1:=p2;
       end
       else begin
         p2:=Q_posstr('>',s,p1);
